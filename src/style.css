@@ -519,54 +519,6 @@ html {
   color: var(--text-2);
 }
 
-/* Deep Analysis Sections */
-.sdv-deep-section {
-  margin: 12px 0;
-  background: rgba(107, 29, 110, 0.06);
-  padding: 14px 16px;
-  border-radius: 10px;
-  border: 1px solid rgba(168, 85, 247, 0.12);
-}
-
-.sdv-deep-title {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--text-1);
-  margin-bottom: 8px;
-}
-
-.sdv-deep-text {
-  font-size: 0.8rem;
-  color: var(--text-2);
-  line-height: 1.6;
-}
-
-.sdv-deep-list {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 0.8rem;
-  color: var(--text-2);
-  line-height: 1.7;
-}
-
-.sdv-deep-list li {
-  margin-bottom: 4px;
-}
-
-.sdv-code {
-  background: rgba(15, 10, 30, 0.85);
-  padding: 14px;
-  border-radius: 8px;
-  font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 0.75rem;
-  color: #a855f7;
-  overflow-x: auto;
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  margin: 6px 0 0;
-  white-space: pre;
-  line-height: 1.5;
-}
-
 .sdv-section {
   margin-bottom: 24px;
 }
@@ -2482,4 +2434,254 @@ body {
 .quiz-success-sub {
   font-size: 0.85rem;
   color: var(--text-2);
+}
+
+/* ══════════════════════════════════════════════
+   System Design Visualizer (SDV)
+   ══════════════════════════════════════════════ */
+.design-visualizer {
+  padding: 24px 32px;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.sdv-back-btn {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: var(--purple-light);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  transition: background 0.2s;
+}
+
+.sdv-back-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.sdv-header {
+  margin-bottom: 16px;
+}
+
+.sdv-header h2 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.sdv-header p {
+  color: var(--text-3);
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+
+.sdv-diagram {
+  background: rgba(12, 8, 30, 0.7);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+}
+
+.sdv-node {
+  transition: opacity 0.5s ease;
+  cursor: pointer;
+}
+
+.sdv-node rect {
+  transition: filter 0.5s ease, stroke-width 0.3s ease;
+}
+
+.sdv-line {
+  transition: opacity 0.5s ease, stroke 0.4s ease, stroke-width 0.3s ease;
+}
+
+/* Animated flow dots */
+.sdv-flow-dot {
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+/* Data Flow Bar */
+.sdv-flow-bar {
+  background: rgba(168, 85, 247, 0.06);
+  border: 1px solid rgba(168, 85, 247, 0.1);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.sdv-flow-label {
+  color: var(--text-2);
+  font-weight: 700;
+}
+
+.sdv-flow-text {
+  color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+}
+
+/* Controls */
+.sdv-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.sdv-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: rgba(168, 85, 247, 0.08);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.sdv-btn:hover {
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.sdv-btn.sdv-play {
+  background: linear-gradient(135deg, #6b1d6e, #a855f7);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  font-size: 0.85rem;
+}
+
+.sdv-btn.sdv-play:hover {
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+}
+
+.sdv-step-count {
+  color: var(--text-3);
+  font-size: 0.8rem;
+  margin-left: auto;
+  font-weight: 600;
+}
+
+/* Step Panel */
+.sdv-step-panel {
+  background: rgba(168, 85, 247, 0.04);
+  border: 1px solid rgba(168, 85, 247, 0.1);
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.sdv-step-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-1);
+  margin-bottom: 10px;
+}
+
+.sdv-step-desc {
+  color: var(--text-2);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  margin-bottom: 16px;
+  white-space: pre-line;
+}
+
+.sdv-step-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sdv-meta-item {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  background: rgba(18, 12, 42, 0.5);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid rgba(168, 85, 247, 0.3);
+  line-height: 1.6;
+}
+
+.sdv-meta-item strong {
+  color: var(--text-2);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Tech Stack & Suggestions */
+.sdv-section {
+  margin-bottom: 24px;
+}
+
+.sdv-section h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-1);
+  margin: 0 0 10px;
+}
+
+.sdv-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.sdv-tag {
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(107, 29, 110, 0.15), rgba(168, 85, 247, 0.1));
+  color: var(--purple-light);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(168, 85, 247, 0.15);
+}
+
+.sdv-suggestions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sdv-suggestions li {
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: rgba(168, 85, 247, 0.04);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  border-left: 3px solid rgba(244, 122, 32, 0.3);
+}
+
+.sdv-suggestions li::before {
+  content: '💡 ';
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
