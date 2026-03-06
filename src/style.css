@@ -79,12 +79,26 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0c0818;
+  background: var(--bg-base);
   background-image:
-    radial-gradient(ellipse at 20% 30%, rgba(107, 29, 110, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 70%, rgba(244, 122, 32, 0.1) 0%, transparent 50%);
+    radial-gradient(ellipse at 10% 20%, rgba(74, 14, 78, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(244, 122, 32, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(107, 29, 110, 0.04) 0%, transparent 60%);
   transition: opacity 0.5s ease, transform 0.5s ease;
   overflow: hidden;
+}
+
+.auth-bg-img {
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 450px;
+  height: 450px;
+  background: url('/images/creative-bg.png') center/contain no-repeat;
+  opacity: 0.2;
+  filter: saturate(1.2);
+  animation: authFloat 10s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 
 #auth-screen.hidden {

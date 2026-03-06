@@ -536,6 +536,254 @@ const buildTopicContext = (topic) => {
     };
 }
 
+// ─── System Design Generator ───
+function generateSystemDesign(userIdea) {
+    const q = userIdea.toLowerCase();
+
+    // Detect app type
+    const appTypes = {
+        'food delivery': { name: 'Food Delivery Platform', db: 'PostgreSQL + Redis', queue: 'RabbitMQ', cdn: true, realtime: true, geo: true },
+        'delivery': { name: 'Delivery Service', db: 'PostgreSQL + Redis', queue: 'RabbitMQ', cdn: false, realtime: true, geo: true },
+        'e-commerce': { name: 'E-Commerce Platform', db: 'PostgreSQL + Redis + Elasticsearch', queue: 'Kafka', cdn: true, realtime: false, geo: false },
+        'ecommerce': { name: 'E-Commerce Platform', db: 'PostgreSQL + Redis + Elasticsearch', queue: 'Kafka', cdn: true, realtime: false, geo: false },
+        'shop': { name: 'Online Marketplace', db: 'PostgreSQL + Redis + Elasticsearch', queue: 'Kafka', cdn: true, realtime: false, geo: false },
+        'chat': { name: 'Real-Time Chat Application', db: 'MongoDB + Redis', queue: 'Redis Pub/Sub', cdn: false, realtime: true, geo: false },
+        'social media': { name: 'Social Media Platform', db: 'PostgreSQL + Redis + Neo4j', queue: 'Kafka', cdn: true, realtime: true, geo: false },
+        'streaming': { name: 'Video Streaming Service', db: 'PostgreSQL + Redis', queue: 'Kafka', cdn: true, realtime: true, geo: true },
+        'video': { name: 'Video Platform', db: 'PostgreSQL + Redis + S3', queue: 'Kafka', cdn: true, realtime: false, geo: false },
+        'ride': { name: 'Ride-Sharing Platform', db: 'PostgreSQL + Redis', queue: 'Kafka', cdn: false, realtime: true, geo: true },
+        'uber': { name: 'Ride-Sharing Platform', db: 'PostgreSQL + Redis', queue: 'Kafka', cdn: false, realtime: true, geo: true },
+        'booking': { name: 'Booking & Reservation System', db: 'PostgreSQL + Redis', queue: 'RabbitMQ', cdn: false, realtime: false, geo: false },
+        'hotel': { name: 'Hotel Booking Platform', db: 'PostgreSQL + Redis + Elasticsearch', queue: 'RabbitMQ', cdn: true, realtime: false, geo: true },
+        'payment': { name: 'Payment Processing System', db: 'PostgreSQL + Redis', queue: 'Kafka', cdn: false, realtime: false, geo: false },
+        'health': { name: 'Healthcare Platform', db: 'PostgreSQL + Redis', queue: 'RabbitMQ', cdn: false, realtime: true, geo: false },
+        'fitness': { name: 'Fitness & Wellness App', db: 'PostgreSQL + Redis', queue: 'RabbitMQ', cdn: true, realtime: false, geo: false },
+        'education': { name: 'Ed-Tech Learning Platform', db: 'PostgreSQL + Redis + S3', queue: 'RabbitMQ', cdn: true, realtime: true, geo: false },
+        'learning': { name: 'Online Learning Platform', db: 'PostgreSQL + Redis + S3', queue: 'RabbitMQ', cdn: true, realtime: true, geo: false },
+        'game': { name: 'Online Gaming Platform', db: 'MongoDB + Redis', queue: 'Redis Pub/Sub', cdn: true, realtime: true, geo: true },
+        'music': { name: 'Music Streaming Platform', db: 'PostgreSQL + Redis + S3', queue: 'Kafka', cdn: true, realtime: false, geo: false },
+        'spotify': { name: 'Music Streaming Platform', db: 'PostgreSQL + Redis + S3', queue: 'Kafka', cdn: true, realtime: false, geo: false },
+        'netflix': { name: 'Video Streaming Platform', db: 'PostgreSQL + Redis + S3', queue: 'Kafka', cdn: true, realtime: true, geo: true },
+        'whatsapp': { name: 'Messaging Platform', db: 'MongoDB + Redis', queue: 'Kafka', cdn: false, realtime: true, geo: false },
+        'instagram': { name: 'Photo-Sharing Social Platform', db: 'PostgreSQL + Redis + S3', queue: 'Kafka', cdn: true, realtime: true, geo: false },
+        'twitter': { name: 'Micro-Blogging Platform', db: 'PostgreSQL + Redis + Elasticsearch', queue: 'Kafka', cdn: true, realtime: true, geo: false },
+        'amazon': { name: 'E-Commerce Marketplace', db: 'PostgreSQL + DynamoDB + Elasticsearch', queue: 'SQS + Kafka', cdn: true, realtime: false, geo: true },
+        'marketplace': { name: 'Online Marketplace', db: 'PostgreSQL + Redis + Elasticsearch', queue: 'RabbitMQ', cdn: true, realtime: false, geo: false },
+        'travel': { name: 'Travel Booking Platform', db: 'PostgreSQL + Redis + Elasticsearch', queue: 'RabbitMQ', cdn: true, realtime: false, geo: true },
+        'news': { name: 'News Aggregation Platform', db: 'PostgreSQL + Redis + Elasticsearch', queue: 'Kafka', cdn: true, realtime: true, geo: false },
+        'blog': { name: 'Content Management Platform', db: 'PostgreSQL + Redis', queue: 'RabbitMQ', cdn: true, realtime: false, geo: false },
+    };
+
+    let detected = null;
+    for (const [key, val] of Object.entries(appTypes)) {
+        if (q.includes(key)) { detected = val; break; }
+    }
+
+    if (!detected) {
+        detected = { name: 'Custom Application', db: 'PostgreSQL + Redis', queue: 'RabbitMQ', cdn: false, realtime: false, geo: false };
+        // Try to extract app name from user input
+        const nameMatch = userIdea.match(/(?:build|create|design|make|develop)\s+(?:a\s+|an\s+)?(.+?)(?:\s+app|\s+application|\s+system|\s+platform|\s+website|\s+service|$)/i);
+        if (nameMatch) detected.name = nameMatch[1].trim().replace(/^(a|an)\s+/i, '').split(/\s+/).map(w => w[0].toUpperCase() + w.slice(1)).join(' ') + ' Platform';
+    }
+
+    const components = [
+        `🖥️ Frontend: React/Next.js + Responsive UI`,
+        `⚙️ Backend: Node.js + Express (Microservices)`,
+        `🗄️ Database: ${detected.db}`,
+        `🔒 Auth: JWT + OAuth 2.0 (Google, GitHub)`,
+        `📨 Message Queue: ${detected.queue}`,
+    ];
+    if (detected.cdn) components.push(`🌐 CDN: CloudFront / Cloudflare`);
+    if (detected.realtime) components.push(`🔌 Real-Time: WebSocket / Socket.io`);
+    if (detected.geo) components.push(`📍 Geolocation: Redis GeoHash + Maps API`);
+
+    const apis = generateAPIs(q, detected);
+    const algos = generateAlgorithms(q, detected);
+    const scaling = generateScaling(detected);
+    const dbSchema = generateDBSchema(q, detected);
+
+    return `🏗️ SYSTEM DESIGN: ${detected.name.toUpperCase()}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📐 ARCHITECTURE OVERVIEW
+${components.join('\n')}
+
+📡 API ENDPOINTS
+${apis}
+
+🧮 ALGORITHMS & DATA STRUCTURES
+${algos}
+
+🗃️ DATABASE SCHEMA (Key Tables)
+${dbSchema}
+
+📈 SCALING STRATEGY
+${scaling}
+
+⚡ ESTIMATED COMPLEXITY
+• MVP: 2-3 months (1-2 developers)
+• Production: 6-9 months (3-5 developers)
+• Scale: Horizontal auto-scaling with load balancers
+
+💡 TIP: Click on relevant topics in the sidebar (Load Balancing, Caching, Microservices, etc.) to learn more about each component!`;
+}
+
+function generateAPIs(q, detected) {
+    const base = [
+        'POST /api/auth/register — User registration',
+        'POST /api/auth/login — Login + JWT token',
+        'GET  /api/users/:id — Get user profile',
+    ];
+
+    if (q.includes('food') || q.includes('delivery')) {
+        base.push('GET  /api/restaurants — List restaurants nearby',
+            'POST /api/orders — Place new order',
+            'GET  /api/orders/:id/track — Real-time order tracking',
+            'PATCH /api/orders/:id/status — Update delivery status');
+    } else if (q.includes('chat') || q.includes('whatsapp') || q.includes('messag')) {
+        base.push('GET  /api/conversations — List conversations',
+            'POST /api/messages — Send message',
+            'WS   /ws/chat/:roomId — Real-time messaging',
+            'GET  /api/messages/:convId — Message history');
+    } else if (q.includes('ecommerce') || q.includes('e-commerce') || q.includes('shop') || q.includes('amazon')) {
+        base.push('GET  /api/products — Search & filter products',
+            'POST /api/cart — Add to cart',
+            'POST /api/orders — Place order',
+            'POST /api/payments — Process payment',
+            'GET  /api/orders/:id — Order status');
+    } else if (q.includes('social') || q.includes('instagram') || q.includes('twitter')) {
+        base.push('POST /api/posts — Create post',
+            'GET  /api/feed — Get news feed',
+            'POST /api/posts/:id/like — Like a post',
+            'POST /api/users/:id/follow — Follow user',
+            'GET  /api/search — Search users/posts');
+    } else if (q.includes('ride') || q.includes('uber')) {
+        base.push('POST /api/rides/request — Request a ride',
+            'GET  /api/rides/:id/track — Track rider location',
+            'PATCH /api/rides/:id/status — Update ride status',
+            'POST /api/payments/charge — Process ride payment');
+    } else if (q.includes('streaming') || q.includes('video') || q.includes('netflix') || q.includes('youtube')) {
+        base.push('GET  /api/videos — Browse catalog',
+            'POST /api/videos/upload — Upload video',
+            'GET  /api/videos/:id/stream — Adaptive streaming',
+            'POST /api/videos/:id/watch — Track watch history');
+    } else if (q.includes('booking') || q.includes('hotel') || q.includes('travel')) {
+        base.push('GET  /api/listings — Search available listings',
+            'POST /api/bookings — Make a reservation',
+            'GET  /api/bookings/:id — Booking details',
+            'DELETE /api/bookings/:id — Cancel booking');
+    } else {
+        base.push('GET  /api/items — List items (paginated)',
+            'POST /api/items — Create new item',
+            'PUT  /api/items/:id — Update item',
+            'DELETE /api/items/:id — Delete item');
+    }
+
+    return base.map(a => `• ${a}`).join('\n');
+}
+
+function generateAlgorithms(q, detected) {
+    const algos = [
+        '• Consistent Hashing — Distribute data across shards evenly',
+        '• Rate Limiting (Token Bucket) — Prevent API abuse',
+        '• JWT + bcrypt — Secure authentication & password hashing',
+    ];
+
+    if (detected.realtime) algos.push('• WebSocket Pub/Sub — Real-time message delivery');
+    if (detected.geo) algos.push('• GeoHash + R-Tree — Efficient location-based queries');
+    if (detected.cdn) algos.push('• LRU Cache Eviction — Optimize CDN & cache performance');
+
+    if (q.includes('feed') || q.includes('social') || q.includes('news')) {
+        algos.push('• Fan-out on Write — Pre-compute user feeds for fast reads');
+        algos.push('• Ranking Algorithm (EdgeRank) — Score & sort feed items');
+    }
+    if (q.includes('search') || q.includes('e-commerce') || q.includes('ecommerce')) {
+        algos.push('• Inverted Index (Elasticsearch) — Full-text search');
+        algos.push('• TF-IDF + BM25 — Relevance ranking for search results');
+    }
+    if (q.includes('recommendation') || q.includes('streaming') || q.includes('netflix') || q.includes('spotify')) {
+        algos.push('• Collaborative Filtering — Recommend based on similar users');
+        algos.push('• Content-Based Filtering — Recommend based on item features');
+    }
+    if (q.includes('payment') || q.includes('order')) {
+        algos.push('• Saga Pattern — Distributed transaction management');
+        algos.push('• Idempotency Keys — Prevent duplicate payments');
+    }
+    if (q.includes('chat') || q.includes('messag')) {
+        algos.push('• Snowflake ID — Globally unique, time-sortable message IDs');
+        algos.push('• Read Receipt Protocol — Track message delivery status');
+    }
+    if (q.includes('ride') || q.includes('uber') || q.includes('delivery')) {
+        algos.push('• Dijkstra / A* — Shortest path for routing');
+        algos.push('• Quadtree — Efficient spatial indexing for nearby drivers');
+    }
+
+    return algos.join('\n');
+}
+
+function generateScaling(detected) {
+    const strategies = [
+        '• Load Balancer (Nginx/ALB) — Distribute traffic across servers',
+        '• Horizontal Scaling — Add more servers behind the load balancer',
+        '• Database Read Replicas — Scale read-heavy workloads',
+        '• Redis Caching — Reduce database load by 80%',
+    ];
+
+    if (detected.cdn) strategies.push('• CDN (CloudFront) — Serve static assets from edge locations');
+    if (detected.queue) strategies.push(`• ${detected.queue} — Async processing for background tasks`);
+    if (detected.realtime) strategies.push('• WebSocket Connection Pooling — Handle 100K+ concurrent connections');
+    if (detected.geo) strategies.push('• Multi-Region Deployment — Low latency globally');
+
+    strategies.push('• Auto-Scaling Groups — Scale based on CPU/memory metrics');
+    strategies.push('• Database Sharding — Partition data for unlimited growth');
+
+    return strategies.join('\n');
+}
+
+function generateDBSchema(q, detected) {
+    let schema = `• users (id, name, email, password_hash, avatar, created_at)
+• sessions (id, user_id, token, expires_at)`;
+
+    if (q.includes('ecommerce') || q.includes('e-commerce') || q.includes('shop') || q.includes('amazon')) {
+        schema += `\n• products (id, name, description, price, category_id, stock, images)
+• orders (id, user_id, total, status, payment_id, created_at)
+• order_items (id, order_id, product_id, quantity, price)
+• payments (id, order_id, amount, method, status, stripe_id)`;
+    } else if (q.includes('chat') || q.includes('messag') || q.includes('whatsapp')) {
+        schema += `\n• conversations (id, type, name, created_at)
+• participants (conversation_id, user_id, joined_at)
+• messages (id, conversation_id, sender_id, content, type, created_at)`;
+    } else if (q.includes('social') || q.includes('instagram') || q.includes('twitter')) {
+        schema += `\n• posts (id, user_id, content, media_urls, likes_count, created_at)
+• follows (follower_id, following_id, created_at)
+• likes (user_id, post_id, created_at)
+• comments (id, post_id, user_id, content, created_at)`;
+    } else if (q.includes('food') || q.includes('delivery')) {
+        schema += `\n• restaurants (id, name, location, cuisine, rating, is_open)
+• menu_items (id, restaurant_id, name, price, category)
+• orders (id, user_id, restaurant_id, status, total, delivery_address)
+• drivers (id, user_id, location, is_available, rating)`;
+    } else if (q.includes('ride') || q.includes('uber')) {
+        schema += `\n• rides (id, rider_id, driver_id, pickup, dropoff, status, fare)
+• drivers (id, user_id, vehicle, location, is_available, rating)
+• payments (id, ride_id, amount, method, status)`;
+    } else if (q.includes('booking') || q.includes('hotel') || q.includes('travel')) {
+        schema += `\n• listings (id, host_id, title, description, price, location, rating)
+• bookings (id, user_id, listing_id, check_in, check_out, status, total)
+• reviews (id, booking_id, user_id, rating, comment)`;
+    } else if (q.includes('streaming') || q.includes('video') || q.includes('netflix')) {
+        schema += `\n• videos (id, title, description, url, thumbnail, duration, category)
+• watch_history (user_id, video_id, progress, watched_at)
+• subscriptions (id, user_id, plan, status, expires_at)`;
+    } else {
+        schema += `\n• items (id, user_id, title, description, status, created_at)
+• categories (id, name, parent_id)
+• notifications (id, user_id, type, message, read, created_at)`;
+    }
+
+    return schema;
+}
+
 const generateBuiltInAnswer = (question, topicCtx) => {
     const q = question.toLowerCase();
     let answer = '';
@@ -568,18 +816,26 @@ const generateBuiltInAnswer = (question, topicCtx) => {
             answer = `About ${title}: ${overview}\n\nHow it works: ${howItWorks.slice(0, 3).join('. ')}.\n\nKey concepts: ${keyConcepts.slice(0, 3).join(', ')}.${realWorld ? '\n\nReal-world: ' + realWorld : ''}`;
         }
     } else {
-        const allTopics = getAllTopics();
-        const matchingTopics = allTopics.filter(t =>
-            t.title.toLowerCase().includes(q) ||
-            t.tags.some(tag => q.includes(tag.toLowerCase())) ||
-            (t.content?.overview || '').toLowerCase().includes(q)
-        );
+        // Check if user is describing an app idea
+        const ideaKeywords = ['build', 'create', 'design', 'make', 'develop', 'app', 'application', 'system', 'platform', 'website', 'service', 'want to', 'idea', 'project', 'startup', 'product', 'need a', 'like uber', 'like netflix', 'like whatsapp', 'like instagram', 'like youtube', 'like twitter', 'like amazon', 'like spotify', 'e-commerce', 'ecommerce', 'chat', 'social media', 'marketplace', 'booking', 'delivery', 'game', 'streaming', 'payment', 'food', 'ride', 'hotel', 'travel', 'health', 'fitness', 'education', 'learning'];
+        const isAppIdea = ideaKeywords.some(k => q.includes(k)) && q.length > 15;
 
-        if (matchingTopics.length > 0) {
-            const t = matchingTopics[0];
-            answer = `${t.title}: ${t.content?.overview || t.description}\n\nSelect this topic from the sidebar to see its full explanation, animation, algorithms, and quiz!`;
+        if (isAppIdea) {
+            answer = generateSystemDesign(question);
         } else {
-            answer = `Great question! SysWizard covers 64 system design topics across 9 categories. Try selecting a topic from the sidebar first, then ask me about it.\n\nPopular topics: Load Balancing, Caching, CAP Theorem, Microservices, WebSockets, Rate Limiting.`;
+            const allTopics = getAllTopics();
+            const matchingTopics = allTopics.filter(t =>
+                t.title.toLowerCase().includes(q) ||
+                t.tags.some(tag => q.includes(tag.toLowerCase())) ||
+                (t.content?.overview || '').toLowerCase().includes(q)
+            );
+
+            if (matchingTopics.length > 0) {
+                const t = matchingTopics[0];
+                answer = `${t.title}: ${t.content?.overview || t.description}\n\nSelect this topic from the sidebar to see its full explanation, animation, algorithms, and quiz!`;
+            } else {
+                answer = `Hi! I'm Rishi, your System Design AI. I can:\n\n🏗️ Design systems — Describe your app idea and I'll create a full architecture\n📚 Explain topics — Ask about any of the 64 topics\n💡 Answer questions — Ask about algorithms, trade-offs, or interview tips\n\nTry: "Design a food delivery app" or "Explain load balancing"`;
+            }
         }
     }
 
@@ -594,7 +850,7 @@ const handleAiSend = async () => {
 
     const thinkingDiv = document.createElement('div');
     thinkingDiv.className = 'ai-msg ai-msg-assistant ai-thinking';
-    thinkingDiv.textContent = '🧙‍♂️ Thinking...';
+    thinkingDiv.textContent = '🤖 Rishi is thinking...';
     if (aiMessages) { aiMessages.appendChild(thinkingDiv); aiMessages.scrollTop = aiMessages.scrollHeight; }
 
     const topicCtx = currentTopic ? buildTopicContext(currentTopic) : null;
