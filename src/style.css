@@ -519,6 +519,54 @@ html {
   color: var(--text-2);
 }
 
+/* Deep Analysis Sections */
+.sdv-deep-section {
+  margin: 12px 0;
+  background: rgba(107, 29, 110, 0.06);
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(168, 85, 247, 0.12);
+}
+
+.sdv-deep-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+
+.sdv-deep-text {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.sdv-deep-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.7;
+}
+
+.sdv-deep-list li {
+  margin-bottom: 4px;
+}
+
+.sdv-code {
+  background: rgba(15, 10, 30, 0.85);
+  padding: 14px;
+  border-radius: 8px;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: #a855f7;
+  overflow-x: auto;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  margin: 6px 0 0;
+  white-space: pre;
+  line-height: 1.5;
+}
+
 .sdv-section {
   margin-bottom: 24px;
 }
