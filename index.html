@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="SysWizard — Master 60+ system design concepts with stunning interactive animations, written explanations, and AI-powered tutoring." />
+  <title>SysWizard — Master System Design Visually</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+</head>
+
+<body>
+  <!-- ─── Auth Screen ─── -->
+  <div id="auth-screen">
+    <div class="auth-bg-orb auth-orb-1"></div>
+    <div class="auth-bg-orb auth-orb-2"></div>
+    <div class="auth-bg-orb auth-orb-3"></div>
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo">🧙‍♂️</div>
+          <h1 class="auth-title">Sys<span class="accent">Wizard</span></h1>
+          <p class="auth-subtitle">Master System Design Visually</p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form active">
+          <div class="auth-form-group">
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="your@email.com" required autocomplete="email" />
+          </div>
+          <div class="auth-form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="Enter password" required
+              autocomplete="current-password" />
+          </div>
+          <div id="login-error" class="auth-error"></div>
+          <button type="submit" class="auth-btn">Login →</button>
+          <p class="auth-switch">Don't have an account? <a href="#" id="show-signup">Sign up</a></p>
+        </form>
+
+        <!-- Signup Form -->
+        <form id="signup-form" class="auth-form">
+          <div class="auth-form-group">
+            <label>Full Name</label>
+            <input type="text" id="signup-name" placeholder="Rishi Kumar" required />
+          </div>
+          <div class="auth-form-group">
+            <label>Email</label>
+            <input type="email" id="signup-email" placeholder="your@email.com" required autocomplete="email" />
+          </div>
+          <div class="auth-form-group">
+            <label>Password</label>
+            <input type="password" id="signup-password" placeholder="Min 4 characters" required minlength="4"
+              autocomplete="new-password" />
+          </div>
+          <div id="signup-error" class="auth-error"></div>
+          <button type="submit" class="auth-btn signup-btn">Create Account ✨</button>
+          <p class="auth-switch">Already have an account? <a href="#" id="show-login">Login</a></p>
+        </form>
+      </div>
+      <p class="auth-footer">64 interactive topics · Animations · AI Tutor · Free</p>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <!-- ─── Sidebar ─── -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">🧙‍♂️</div>
+        <div>
+          <h1 class="logo-text">Sys<span class="accent">Wizard</span></h1>
+          <span class="logo-sub">VISUAL DESIGN MASTERY</span>
+        </div>
+      </div>
+      <div class="sidebar-search">
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="sidebar-search" placeholder="Search topics..." autocomplete="off" />
+        </div>
+      </div>
+      <nav id="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <div class="progress-ring-wrapper">
+          <svg class="progress-ring" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="17" stroke="rgba(74,14,78,0.08)" stroke-width="3" fill="none" />
+            <circle id="progress-circle" cx="20" cy="20" r="17" stroke="url(#prog-grad)" stroke-width="3" fill="none"
+              stroke-dasharray="106.8" stroke-dashoffset="106.8" stroke-linecap="round" transform="rotate(-90 20 20)" />
+            <defs>
+              <linearGradient id="prog-grad">
+                <stop offset="0%" stop-color="#6b1d6e" />
+                <stop offset="100%" stop-color="#f47a20" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <span id="progress-pct" class="progress-pct">0%</span>
+        </div>
+        <span id="progress-badge" class="progress-label">0 / 64 done</span>
+        <div id="user-profile" class="user-profile">
+          <div class="user-avatar" id="user-avatar">R</div>
+          <span class="user-name" id="user-name">User</span>
+          <button id="logout-btn" class="logout-btn" title="Logout">⏻</button>
+        </div>
+        <button id="ai-toggle-btn" class="ai-toggle-btn">🧙‍♂️ Ask AI Wizard</button>
+      </div>
+    </aside>
+
+    <!-- ─── Main Content ─── -->
+    <main id="main">
+      <!-- Home View -->
+      <section id="home-view">
+        <div class="hero">
+          <div class="hero-glow"></div>
+          <div class="hero-content">
+            <h2 class="hero-title">Master System Design<br /><span class="hero-highlight">From Zero to Expert</span>
+            </h2>
+            <p class="hero-subtitle"><span id="topic-count">64</span> interactive topics · Animations · Code · Interview
+              Tips</p>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-card"><span class="stat-num">9</span><span class="stat-label">Categories</span></div>
+            <div class="stat-card"><span class="stat-num" id="stat-topics">64</span><span
+                class="stat-label">Topics</span></div>
+            <div class="stat-card"><span class="stat-num" id="stat-completed">0</span><span
+                class="stat-label">Completed</span></div>
+          </div>
+        </div>
+
+        <!-- Category & Level Filters -->
+        <div class="filter-bar">
+          <div class="category-tabs" id="category-tabs">
+            <button class="cat-tab active" data-filter="all">✨ All</button>
+          </div>
+          <div class="level-filters">
+            <button class="level-btn active" data-level="all">All</button>
+            <button class="level-btn" data-level="beginner"><span class="dot green"></span>Beginner</button>
+            <button class="level-btn" data-level="intermediate"><span class="dot yellow"></span>Intermediate</button>
+            <button class="level-btn" data-level="advanced"><span class="dot red"></span>Advanced</button>
+          </div>
+        </div>
+
+        <div id="search-header" class="search-header" style="display:none"></div>
+        <div class="topic-grid" id="topic-grid"></div>
+      </section>
+
+      <!-- Topic Detail View (Canvas TOP, Content BOTTOM) -->
+      <section id="topic-view" style="display:none">
+        <div class="topic-header">
+          <button id="back-btn" class="back-btn">← Back</button>
+          <h2 id="topic-title"></h2>
+          <div class="topic-header-right">
+            <span id="step-indicator" class="step-indicator"></span>
+            <button id="mark-complete-btn" class="mark-complete-btn">☐ Mark Complete</button>
+          </div>
+        </div>
+
+        <!-- Canvas Area (LARGE) -->
+        <div class="canvas-area">
+          <canvas id="main-canvas"></canvas>
+          <div id="step-description" class="step-description"></div>
+          <div class="controls-bar">
+            <button id="restart-btn" title="Restart">⟳</button>
+            <button id="prev-btn" title="Previous">⏮</button>
+            <button id="play-btn" title="Play/Pause" class="play-btn">▶</button>
+            <button id="next-btn" title="Next">⏭</button>
+            <div class="speed-control">
+              <label>Speed:</label>
+              <input type="range" id="speed-slider" min="0.25" max="3" step="0.25" value="1" />
+              <span id="speed-label">1x</span>
+            </div>
+            <button id="record-btn" class="record-btn">● Record</button>
+            <button id="stop-record-btn" class="stop-btn" style="display:none">■ Stop</button>
+            <span id="record-status" class="record-status"></span>
+          </div>
+        </div>
+
+        <!-- Content Tabs (BELOW canvas) -->
+        <div class="content-drawer">
+          <div class="content-tabs">
+            <button class="content-tab active" data-tab="learn">📖 Learn</button>
+            <button class="content-tab" data-tab="algorithms">🧮 Algorithms</button>
+            <button class="content-tab" data-tab="code">💻 Code</button>
+            <button class="content-tab" data-tab="interview">🎯 Interview</button>
+          </div>
+          <div class="content-body" id="content-body"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- AI Panel -->
+    <aside id="ai-panel" class="ai-panel">
+      <div class="ai-panel-header">
+        <h3>🧙‍♂️ AI Wizard</h3>
+        <button id="ai-close-btn" class="ai-close-btn">✕</button>
+      </div>
+      <div id="ai-messages" class="ai-messages"></div>
+      <div class="ai-input-bar">
+        <input type="text" id="ai-input" placeholder="Ask anything about system design..." />
+        <button id="ai-send-btn">➤</button>
+      </div>
+    </aside>
+
+    <!-- Quiz Modal -->
+    <div id="quiz-modal" class="modal-overlay" style="display:none">
+      <div class="modal-glass quiz-modal">
+        <div class="modal-header">
+          <h3 id="quiz-modal-title">📝 Knowledge Check</h3>
+          <button id="quiz-close-btn" class="modal-close">✕</button>
+        </div>
+        <div id="quiz-body" class="quiz-body"></div>
+        <div id="quiz-footer" class="quiz-footer"></div>
+      </div>
+    </div>
+
+    <!-- Algorithm Detail Modal -->
+    <div id="algo-modal" class="modal-overlay" style="display:none">
+      <div class="modal-glass algo-modal">
+        <div class="modal-header">
+          <h3 id="algo-modal-title">Algorithm</h3>
+          <button id="algo-close-btn" class="modal-close">✕</button>
+        </div>
+        <div id="algo-modal-body" class="algo-modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
