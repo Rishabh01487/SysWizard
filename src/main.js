@@ -11,6 +11,7 @@ import { getEnrichment } from './content/enrichment.js';
 import { setupGenericAnimation } from './topics/genericAnimation.js';
 import { generateTopicDiagram } from './content/topicDiagrams.js';
 import { authService } from './auth/authService.js';
+import { SystemDesignVisualizer } from './systemDesignVisualizer.js';
 
 // Animation Module Registry
 const ANIM_MODULES = {};
@@ -861,8 +862,36 @@ const handleAiSend = async () => {
     const isAppIdea = ideaKeywords.some(k => q.includes(k)) && q.length > 15;
 
     if (isAppIdea) {
-        // Use structured system design generator directly
-        thinkingDiv.textContent = generateSystemDesign(text);
+        // Show visual system design
+        thinkingDiv.textContent = '🏗️ Generating visual architecture... Check the main view!';
+        thinkingDiv.classList.remove('ai-thinking');
+        // Hide grid & topic view & hero, show design visualizer
+        const gridEl = document.getElementById('topic-grid');
+        const topicEl = document.getElementById('topic-view');
+        const vizEl = document.getElementById('design-visualizer');
+        const heroEl = document.querySelector('.hero');
+        if (gridEl) gridEl.style.display = 'none';
+        if (topicEl) topicEl.style.display = 'none';
+        if (heroEl) heroEl.style.display = 'none';
+        if (vizEl) {
+            vizEl.style.display = 'block';
+            if (!window._sdvInstance) {
+                window._sdvInstance = new SystemDesignVisualizer(vizEl);
+                // Override back button to restore views
+                const origRender = window._sdvInstance._render.bind(window._sdvInstance);
+                window._sdvInstance._render = function (design) {
+                    origRender(design);
+                    const backBtn = this.container.querySelector('.sdv-back-btn');
+                    if (backBtn) backBtn.onclick = () => {
+                        this.container.style.display = 'none';
+                        this.stop();
+                        if (gridEl) gridEl.style.display = '';
+                        if (heroEl) heroEl.style.display = '';
+                    };
+                };
+            }
+            window._sdvInstance.generate(text);
+        }
     } else {
         // For general questions, try Ollama first, fallback to built-in
         try {
