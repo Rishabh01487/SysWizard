@@ -368,6 +368,206 @@ html {
   border-color: rgba(239, 68, 68, 0.4);
 }
 
+/* ── System Design Visualizer ── */
+.design-visualizer {
+  padding: 24px 32px;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.sdv-back-btn {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: var(--purple-light);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  transition: background 0.2s;
+}
+
+.sdv-back-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.sdv-header {
+  margin-bottom: 20px;
+}
+
+.sdv-header h2 {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.sdv-header p {
+  color: var(--text-3);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.sdv-diagram {
+  background: rgba(20, 14, 40, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.sdv-node {
+  transition: opacity 0.4s ease;
+  cursor: pointer;
+}
+
+.sdv-node rect {
+  transition: filter 0.4s ease, stroke-width 0.3s ease;
+}
+
+.sdv-line {
+  transition: stroke 0.4s ease, stroke-width 0.3s ease;
+}
+
+.sdv-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sdv-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: rgba(168, 85, 247, 0.08);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.sdv-btn:hover {
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.sdv-btn.sdv-play {
+  background: linear-gradient(135deg, #6b1d6e, #a855f7);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  font-size: 0.85rem;
+}
+
+.sdv-btn.sdv-play:hover {
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+}
+
+.sdv-step-count {
+  color: var(--text-3);
+  font-size: 0.8rem;
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.sdv-step-panel {
+  background: rgba(168, 85, 247, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  min-height: 120px;
+}
+
+.sdv-step-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+
+.sdv-step-desc {
+  color: var(--text-2);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.sdv-step-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sdv-meta-item {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  background: rgba(24, 18, 48, 0.5);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 3px solid rgba(168, 85, 247, 0.3);
+}
+
+.sdv-meta-item strong {
+  color: var(--text-2);
+}
+
+.sdv-section {
+  margin-bottom: 24px;
+}
+
+.sdv-section h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-1);
+  margin: 0 0 10px;
+}
+
+.sdv-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.sdv-tag {
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(107, 29, 110, 0.15), rgba(168, 85, 247, 0.1));
+  color: var(--purple-light);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(168, 85, 247, 0.15);
+}
+
+.sdv-suggestions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sdv-suggestions li {
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: rgba(168, 85, 247, 0.04);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  border-left: 3px solid rgba(244, 122, 32, 0.3);
+}
+
+.sdv-suggestions li::before {
+  content: '💡 ';
+}
+
 body {
   font-family: var(--font);
   background: var(--bg-base);
