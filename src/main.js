@@ -4,6 +4,7 @@
  */
 import './style.css';
 import { AnimationEngine } from './engine/AnimationEngine.js';
+import AdvancedFlowVisualizer from './engine/AdvancedFlowVisualizer.js';
 import { OllamaService } from './ai/ollamaService.js';
 import { VideoRecorder } from './recorder/VideoRecorder.js';
 import { CATEGORIES, getAllTopics, searchTopics, getTopicById } from './content/topicRegistry.js';
@@ -12,9 +13,23 @@ import { setupGenericAnimation } from './topics/genericAnimation.js';
 import { generateTopicDiagram } from './content/topicDiagrams.js';
 import { authService } from './auth/authService.js';
 import { SystemDesignVisualizer } from './systemDesignVisualizer.js';
+import { setupClientServerBespoke } from './topics/bespoke/clientServer.js';
+import { setupLoadBalancingBespoke } from './topics/bespoke/loadBalancing.js';
+import { setupCachingBespoke } from './topics/bespoke/caching.js';
+import { DEEP_ANALYSIS, getDeepAnalysis } from './content/deepAnalysis.js';
+import { COMPREHENSIVE_GUIDE } from './content/comprehensiveGuide.js';
+import { TOPIC_VISUALIZATIONS } from './content/topicVisualizations.js';
+import { SYSTEM_DESIGN_KB } from './content/systemDesignKnowledgeBase.js';
+import SystemDesignGenerator from './engine/SystemDesignGenerator.js';
+import { RishiAIAgent, rishiAgent } from './ai/RishiAgent.js';
+import { featureIntegration } from './ai/FeatureIntegration.js';
 
 // Animation Module Registry
-const ANIM_MODULES = {};
+const ANIM_MODULES = {
+    'client-server': setupClientServerBespoke,
+    'load-balancing': setupLoadBalancingBespoke,
+    'caching': setupCachingBespoke
+};
 async function loadAnimModule(name) {
     if (ANIM_MODULES[name]) return ANIM_MODULES[name];
     try { const mod = await import(`./topics/${name}.js`); ANIM_MODULES[name] = mod; return mod; } catch { return null; }
@@ -52,6 +67,12 @@ const statTopics = $('#stat-topics');
 const statCompleted = $('#stat-completed');
 const topicCount = $('#topic-count');
 
+// Flow Visualizer DOM
+const flowCanvas = $('#flow-canvas');
+const flowVisualizationContainer = $('#flow-visualization-container');
+const flowTypeSelector = $('#flow-type-selector');
+const toggleFlowVizBtn = $('#toggle-flow-viz-btn');
+
 // Modal DOM
 const quizModal = $('#quiz-modal');
 const quizBody = $('#quiz-body');
@@ -65,6 +86,7 @@ const algoCloseBtn = $('#algo-close-btn');
 
 // State
 const engine = new AnimationEngine(canvas);
+const flowVisualizer = flowCanvas ? new AdvancedFlowVisualizer(flowCanvas) : null;
 const ollama = new OllamaService();
 const recorder = new VideoRecorder(canvas);
 let currentTopic = null;
@@ -203,24 +225,42 @@ async function openTopic(topicId) {
     renderContent('learn');
     updateProgressUI();
 
-    const animName = currentTopic.animationModule;
-    if (animName) {
-        const mod = await loadAnimModule(animName);
-        if (mod) {
+    // First try our statically mapped bespoke modules by topic ID
+    if (ANIM_MODULES[topicId]) {
+        engine._resize();
+        ANIM_MODULES[topicId](engine);
+        engine.goToStep(0);
+        engine.play();
+        updatePlayBtn();
+        updateStepUI();
+    } else {
+        // Fallback to dynamic load or generic animation
+        const animName = currentTopic.animationModule;
+        if (animName) {
+            const mod = await loadAnimModule(animName);
+            if (mod && mod.setup) {
+                engine._resize();
+                mod.setup(engine);
+                engine.goToStep(0);
+                engine.play();
+                updatePlayBtn();
+                updateStepUI();
+            } else {
+                engine._resize();
+                setupGenericAnimation(engine, currentTopic);
+                engine.goToStep(0);
+                engine.play();
+                updatePlayBtn();
+                updateStepUI();
+            }
+        } else {
             engine._resize();
-            mod.setup(engine);
+            setupGenericAnimation(engine, currentTopic);
             engine.goToStep(0);
             engine.play();
             updatePlayBtn();
             updateStepUI();
         }
-    } else {
-        engine._resize();
-        setupGenericAnimation(engine, currentTopic);
-        engine.goToStep(0);
-        engine.play();
-        updatePlayBtn();
-        updateStepUI();
     }
 }
 
@@ -309,6 +349,107 @@ function renderContent(tab) {
           <div class="tradeoff-box cons"><h4>❌ Disadvantages</h4><ul>${(c.tradeoffs?.cons || []).map(s => `<li>${s}</li>`).join('')}</ul></div>
         </div>
       </div>`;
+    } else if (tab === 'request-flow') {
+        contentBody.className = 'content-body single-col';
+        const analysis = getDeepAnalysis(currentTopic.id.includes('food') ? 'foodDelivery' : currentTopic.id.includes('ecommerce') ? 'ecommerce' : 'generic');
+        const flow = analysis.requestFlow || analysis.flowStages;
+        if (flow && flow.steps) {
+            contentBody.innerHTML = `
+            <div class="content-section">
+                <div class="content-section-title">${flow.title}</div>
+                <div class="flow-timeline">
+                    ${flow.steps.map((s, i) => `
+                        <div class="flow-step">
+                            <div class="flow-step-number">${i + 1}</div>
+                            <div class="flow-step-content">
+                                <h4>${s.name || s.stage}</h4>
+                                <p>${s.description || s.process?.join(' → ') || ''}</p>
+                                ${s.timing ? `<div class="flow-timing">⏱️ ${s.timing}</div>` : ''}
+                                ${s.cache ? `<div class="flow-cache">💾 ${s.cache}</div>` : ''}
+                                ${s.details ? `<ul class="flow-details">${s.details.map(d => `<li>${d}</li>`).join('')}</ul>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        } else {
+            contentBody.innerHTML = `<div class="content-section"><p>No detailed flow information available for this topic.</p></div>`;
+        }
+    } else if (tab === 'data-flow') {
+        contentBody.className = 'content-body single-col';
+        const analysis = getDeepAnalysis(currentTopic.id.includes('food') ? 'foodDelivery' : 'generic');
+        const flow = analysis.dataFlowVisualization || analysis.dataFlowDiagram;
+        if (flow) {
+            contentBody.innerHTML = `
+            <div class="content-section">
+                <div class="content-section-title">${flow.title}</div>
+                ${flow.flowChart ? `<pre class="flow-chart">${flow.flowChart}</pre>` : ''}
+                ${flow.components ? `
+                    <div class="data-flow-components">
+                        ${flow.components.map((c, i) => `
+                            <div class="data-flow-component">
+                                <h4>${c.name}</h4>
+                                <p><strong>Flow:</strong> ${c.flow}</p>
+                                <p><strong>Size:</strong> ${c.size}</p>
+                                <p><strong>Example:</strong> <code>${c.example}</code></p>
+                                ${c.frequency ? `<p><strong>Frequency:</strong> ${c.frequency}</p>` : ''}
+                                ${c.strategy ? `<p><strong>Strategy:</strong> ${c.strategy}</p>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>`;
+        }
+    } else if (tab === 'caching') {
+        contentBody.className = 'content-body single-col';
+        const analysis = getDeepAnalysis(currentTopic.id.includes('food') ? 'foodDelivery' : 'generic');
+        const caching = analysis.cachingStrategy;
+        if (caching) {
+            contentBody.innerHTML = `
+            <div class="content-section">
+                <div class="content-section-title">${caching.title}</div>
+                <div class="caching-layers">
+                    ${caching.layers.map((layer, i) => `
+                        <div class="caching-layer">
+                            <div class="cache-layer-header">
+                                <h4>${layer.layer}. ${layer.layer}</h4>
+                                <span class="cache-ttl">TTL: ${layer.ttl}</span>
+                            </div>
+                            <p><strong>Strategy:</strong> ${layer.strategy}</p>
+                            <p><strong>Contents:</strong> ${layer.contents}</p>
+                            <div class="cache-details" style="font-size: 12px; color: #94a3b8; margin-top: 8px;">
+                                Typical hit time: varies based on layer
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
+    } else if (tab === 'deep-analysis') {
+        contentBody.className = 'content-body single-col';
+        const analysis = getDeepAnalysis(currentTopic.id.includes('food') ? 'foodDelivery' : currentTopic.id.includes('ecommerce') ? 'ecommerce' : 'generic');
+        if (analysis.architecture) {
+            contentBody.innerHTML = `
+            <div class="content-section">
+                <div class="content-section-title">${analysis.architecture.title}</div>
+                <pre class="deep-analysis-content">${analysis.architecture.content}</pre>
+            </div>
+            ${analysis.scalability ? `
+                <div class="content-section">
+                    <div class="content-section-title">${analysis.scalability.title}</div>
+                    <div class="scalability-challenges">
+                        ${analysis.scalability.challenges.map(c => `
+                            <div class="challenge-card">
+                                <h4>🎯 ${c.challenge}</h4>
+                                <p><strong>Problem:</strong> ${c.problem}</p>
+                                <p><strong>Solution:</strong> ${c.solution}</p>
+                                <p><strong>Bottleneck:</strong> ${c.bottleneck}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}`;
+        }
     } else if (tab === 'algorithms') {
         contentBody.className = 'content-body single-col';
         const enrichment = getEnrichment(currentTopic.id);
@@ -372,9 +513,49 @@ recordBtn.addEventListener('click', () => {
 });
 stopRecordBtn.addEventListener('click', () => { recorder.stop(); stopRecordBtn.style.display = 'none'; recordBtn.style.display = ''; recordStatus.textContent = ''; });
 
+// Flow Visualization
+if (toggleFlowVizBtn) {
+    toggleFlowVizBtn.addEventListener('click', () => {
+        if (!flowVisualizer || !flowVisualizationContainer) return;
+        const isVisible = flowVisualizationContainer.style.display !== 'none';
+        if (isVisible) {
+            flowVisualizationContainer.style.display = 'none';
+            canvas.style.display = 'block';
+            flowVisualizer.stopAnimation();
+        } else {
+            canvas.style.display = 'none';
+            flowVisualizationContainer.style.display = 'block';
+            const topic = currentTopic?.id || 'generic';
+            const flowType = flowTypeSelector?.value || 'request-response';
+            if (flowType === 'request-response') {
+                flowVisualizer.generateRequestResponseCycle(topic);
+            } else if (flowType === 'data-flow') {
+                flowVisualizer.generateDataFlowDiagram();
+            } else if (flowType === 'caching') {
+                flowVisualizer.generateCachingVisualization();
+            }
+        }
+    });
+}
+
+if (flowTypeSelector) {
+    flowTypeSelector.addEventListener('change', () => {
+        if (!flowVisualizer || flowVisualizationContainer.style.display === 'none') return;
+        const flowType = flowTypeSelector.value;
+        const topic = currentTopic?.id || 'generic';
+        if (flowType === 'request-response') {
+            flowVisualizer.generateRequestResponseCycle(topic);
+        } else if (flowType === 'data-flow') {
+            flowVisualizer.generateDataFlowDiagram();
+        } else if (flowType === 'caching') {
+            flowVisualizer.generateCachingVisualization();
+        }
+    });
+}
+
 // Keyboard
 document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT') return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
     if (quizModal && quizModal.style.display !== 'none' || algoModal && algoModal.style.display !== 'none') {
         if (e.key === 'Escape') { if (quizModal) quizModal.style.display = 'none'; if (algoModal) algoModal.style.display = 'none'; }
         return;
@@ -865,31 +1046,28 @@ const handleAiSend = async () => {
         // Show visual system design
         thinkingDiv.textContent = '🏗️ Generating visual architecture... Check the main view!';
         thinkingDiv.classList.remove('ai-thinking');
-        // Hide grid & topic view & hero, show design visualizer
-        const gridEl = document.getElementById('topic-grid');
-        const topicEl = document.getElementById('topic-view');
+        // Hide ALL views, show design visualizer full-screen
+        const homeView = document.getElementById('home-view');
+        const topicView = document.getElementById('topic-view');
         const vizEl = document.getElementById('design-visualizer');
-        const heroEl = document.querySelector('.hero');
-        if (gridEl) gridEl.style.display = 'none';
-        if (topicEl) topicEl.style.display = 'none';
-        if (heroEl) heroEl.style.display = 'none';
+        if (homeView) homeView.style.display = 'none';
+        if (topicView) topicView.style.display = 'none';
         if (vizEl) {
             vizEl.style.display = 'block';
-            if (!window._sdvInstance) {
-                window._sdvInstance = new SystemDesignVisualizer(vizEl);
-                // Override back button to restore views
-                const origRender = window._sdvInstance._render.bind(window._sdvInstance);
-                window._sdvInstance._render = function (design) {
-                    origRender(design);
-                    const backBtn = this.container.querySelector('.sdv-back-btn');
-                    if (backBtn) backBtn.onclick = () => {
-                        this.container.style.display = 'none';
-                        this.stop();
-                        if (gridEl) gridEl.style.display = '';
-                        if (heroEl) heroEl.style.display = '';
-                    };
+            // Recreate instance each time for fresh state
+            if (window._sdvInstance) window._sdvInstance.destroy();
+            window._sdvInstance = new SystemDesignVisualizer(vizEl);
+            // Override back button to restore home view
+            const origRender = window._sdvInstance._render.bind(window._sdvInstance);
+            window._sdvInstance._render = function (design) {
+                origRender(design);
+                const backBtn = this.container.querySelector('.sdv-back-btn');
+                if (backBtn) backBtn.onclick = () => {
+                    this.container.style.display = 'none';
+                    this.stop();
+                    if (homeView) homeView.style.display = '';
                 };
-            }
+            };
             window._sdvInstance.generate(text);
         }
     } else {
@@ -937,6 +1115,8 @@ function showApp() {
     renderCategoryTabs();
     renderGrid();
     updateProgressUI();
+    // Initialize enhanced features: Rishi AI, Design Generator, Visualizations
+    featureIntegration.initialize();
 }
 
 function showAuth() {

@@ -2685,3 +2685,226 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ── System Design Visualizer ── */
+.design-visualizer {
+  padding: 24px 32px;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.sdv-back-btn {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: var(--purple-light);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  transition: background 0.2s;
+}
+
+.sdv-back-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.sdv-header {
+  margin-bottom: 20px;
+}
+
+.sdv-header h2 {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.sdv-header p {
+  color: var(--text-3);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.sdv-diagram {
+  background: rgba(20, 14, 40, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.sdv-node {
+  transition: opacity 0.4s ease;
+  cursor: pointer;
+}
+
+.sdv-node rect {
+  transition: filter 0.4s ease, stroke-width 0.3s ease;
+}
+
+.sdv-line {
+  transition: stroke 0.4s ease, stroke-width 0.3s ease;
+}
+
+.sdv-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sdv-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: rgba(168, 85, 247, 0.08);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sdv-btn:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: var(--text-1);
+}
+
+.sdv-btn.primary {
+  background: var(--purple-accent);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+.sdv-btn.primary:hover {
+  background: #b166f7;
+  transform: translateY(-1px);
+}
+
+.sdv-step-indicator {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.sdv-panel {
+  background: rgba(20, 14, 40, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.sdv-panel-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-1);
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sdv-panel-title span {
+  background: var(--purple-accent);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+.sdv-panel-desc {
+  color: var(--text-2);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+
+.sdv-tech-stack,
+.sdv-algorithms {
+  margin-top: 16px;
+}
+
+.sdv-tech-stack h4,
+.sdv-algorithms h4 {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+}
+
+.sdv-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sdv-tag {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: var(--purple-light);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sdv-algo-tag {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #fca5a5;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Animations */
+@keyframes pulseNode {
+  0% {
+    filter: drop-shadow(0 0 4px var(--purple-accent));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 12px var(--purple-accent));
+  }
+
+  100% {
+    filter: drop-shadow(0 0 4px var(--purple-accent));
+  }
+}
+
+.sdv-node.active rect {
+  animation: pulseNode 2s infinite;
+  stroke: var(--purple-accent);
+  stroke-width: 3;
+}
+
+@keyframes dashFlow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.sdv-line.active {
+  stroke: var(--purple-accent);
+  stroke-width: 3;
+  stroke-dasharray: 6;
+  animation: dashFlow 0.5s linear infinite;
+}
