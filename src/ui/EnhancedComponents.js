@@ -44,7 +44,7 @@ export function setupRishiChatPanel() {
       </div>
     </div>
   `;
-  
+
   return chatPanelHTML;
 }
 
@@ -106,7 +106,7 @@ export function setupDesignGeneratorPanel() {
       </div>
     </div>
   `;
-  
+
   return generatorHTML;
 }
 
@@ -135,7 +135,7 @@ export function setupTopicVisualizationPanel() {
       </div>
     </div>
   `;
-  
+
   return vizHTML;
 }
 
@@ -160,7 +160,7 @@ export function renderVizualizationDetails(topic, data) {
       </div>
     </div>
   `).join('');
-  
+
   return mainFlowsHTML;
 }
 
@@ -237,21 +237,22 @@ export function renderDesignGeneratorOutput(design) {
       </div>
     </div>
   `;
-  
+
   return html;
 }
 
 export function addChatMessage(question, isUser = true) {
-  const messagesDiv = document.querySelector('#rishi-messages');
+  const messagesDiv = document.querySelector('#ai-messages') || document.querySelector('#rishi-messages');
+  if (!messagesDiv) return;
   const messageDiv = document.createElement('div');
-  messageDiv.className = isUser ? 'rishi-message user-message' : 'rishi-message ai-message';
-  
+  messageDiv.className = isUser ? 'ai-msg ai-msg-user' : 'ai-msg ai-msg-assistant';
+
   if (isUser) {
-    messageDiv.innerHTML = `<strong>You:</strong> ${escapeHtml(question)}`;
+    messageDiv.textContent = question;
   } else {
-    messageDiv.innerHTML = `<strong>Rishi:</strong> ${question}`;
+    messageDiv.textContent = question;
   }
-  
+
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -263,11 +264,12 @@ function escapeHtml(text) {
 }
 
 export function showLoadingIndicator(message = 'Thinking...') {
-  const messagesDiv = document.querySelector('#rishi-messages');
+  const messagesDiv = document.querySelector('#ai-messages') || document.querySelector('#rishi-messages');
+  if (!messagesDiv) return;
   const loadingDiv = document.createElement('div');
   loadingDiv.id = 'rishi-loading';
-  loadingDiv.className = 'rishi-message ai-message loading';
-  loadingDiv.innerHTML = `<strong>Rishi:</strong> <span class="typing-indicator">${message}</span>`;
+  loadingDiv.className = 'ai-msg ai-msg-assistant loading';
+  loadingDiv.textContent = `🤖 Rishi is thinking...`;
   messagesDiv.appendChild(loadingDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
