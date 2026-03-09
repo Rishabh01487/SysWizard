@@ -21,22 +21,27 @@ import { COMPREHENSIVE_GUIDE } from './content/comprehensiveGuide.js';
 import { TOPIC_VISUALIZATIONS } from './content/topicVisualizations.js';
 import { SYSTEM_DESIGN_KB } from './content/systemDesignKnowledgeBase.js';
 import SystemDesignGenerator from './engine/SystemDesignGenerator.js';
+import { KNOWLEDGE_BASE_NOTES } from './content/knowledgeBase.js';
+import { ImageGenerator } from './ai/imageGenerator.js';
 import { RishiAIAgent, rishiAgent } from './ai/RishiAgent.js';
 import { featureIntegration } from './ai/FeatureIntegration.js';
 
-// Animation Module Registry
+// DOM selections are now consolidated. Using $ helper.
+const $ = s => document.querySelector(s);
+
+// Registry & State
 const ANIM_MODULES = {
     'client-server': setupClientServerBespoke,
     'load-balancing': setupLoadBalancingBespoke,
     'caching': setupCachingBespoke
 };
+
 async function loadAnimModule(name) {
     if (ANIM_MODULES[name]) return ANIM_MODULES[name];
     try { const mod = await import(`./topics/${name}.js`); ANIM_MODULES[name] = mod; return mod; } catch { return null; }
 }
 
-// DOM
-const $ = s => document.querySelector(s);
+// Global DOM
 const sidebarNav = $('#sidebar-nav');
 const sidebarSearch = $('#sidebar-search');
 const homeView = $('#home-view');
@@ -44,6 +49,12 @@ const topicView = $('#topic-view');
 const topicGrid = $('#topic-grid');
 const categoryTabs = $('#category-tabs');
 const searchHeader = $('#search-header');
+const libraryView = $('#library-view');
+const libraryContent = $('#library-content');
+const nanoBananaView = $('#nano-banana-view');
+const nanoPrompt = $('#nano-prompt');
+const nanoGenerateBtn = $('#nano-generate-btn');
+const designVisualizer = $('#design-visualizer');
 const canvas = $('#main-canvas');
 const topicTitle = $('#topic-title');
 const stepIndicator = $('#step-indicator');
@@ -56,7 +67,10 @@ const restartBtn = $('#restart-btn');
 const speedSlider = $('#speed-slider');
 const speedLabel = $('#speed-label');
 const backBtn = $('#back-btn');
+const presentationBtn = $('#presentation-btn');
 const markCompleteBtn = $('#mark-complete-btn');
+
+// Other View Specifics
 const recordBtn = $('#record-btn');
 const stopRecordBtn = $('#stop-record-btn');
 const recordStatus = $('#record-status');
@@ -66,14 +80,10 @@ const progressPct = $('#progress-pct');
 const statTopics = $('#stat-topics');
 const statCompleted = $('#stat-completed');
 const topicCount = $('#topic-count');
-
-// Flow Visualizer DOM
 const flowCanvas = $('#flow-canvas');
 const flowVisualizationContainer = $('#flow-visualization-container');
 const flowTypeSelector = $('#flow-type-selector');
 const toggleFlowVizBtn = $('#toggle-flow-viz-btn');
-
-// Modal DOM
 const quizModal = $('#quiz-modal');
 const quizBody = $('#quiz-body');
 const quizFooter = $('#quiz-footer');
@@ -84,46 +94,174 @@ const algoModalTitle = $('#algo-modal-title');
 const algoModalBody = $('#algo-modal-body');
 const algoCloseBtn = $('#algo-close-btn');
 
-// State
-const engine = new AnimationEngine(canvas);
-const flowVisualizer = flowCanvas ? new AdvancedFlowVisualizer(flowCanvas) : null;
-const ollama = new OllamaService();
-const recorder = new VideoRecorder(canvas);
+// AI & Rishi Selections
+const aiPanel = $('#ai-panel');
+const aiMessages = $('#ai-messages');
+const aiInput = $('#ai-input');
+const aiSendBtn = $('#ai-send-btn');
+const aiCloseBtn = $('#ai-close-btn');
+const aiToggleBtn = $('#ai-toggle-btn');
+const aiVoiceBtn = $('#ai-voice-btn');
+const aiStatusContainer = $('#ai-status-container');
+
+// Auth Form Selections
+const loginForm = $('#login-form');
+const signupForm = $('#signup-form');
+const showSignupLink = $('#show-signup');
+const showLoginLink = $('#show-login');
+const loginError = $('#login-error');
+const signupError = $('#signup-error');
+
+// ─── Core instances (initialized lazily after login) ───
+let engine = null;
+let flowVisualizer = null;
+let recorder = null;
+let sdv = null;
+
+// App State
 let currentTopic = null;
 let currentFilter = 'all';
 let currentLevel = 'all';
-let isAiPanelOpen = false;
 let activeContentTab = 'learn';
+let nanoGenerator = null;
 
 // ─── Progress ───
-function getCompleted() { try { return JSON.parse(localStorage.getItem('sw-done') || '[]'); } catch { return []; } }
-function setCompleted(ids) { localStorage.setItem('sw-done', JSON.stringify(ids)); }
-function isCompleted(id) { return getCompleted().includes(id); }
-function toggleComplete(id) {
-    const list = getCompleted();
-    const idx = list.indexOf(id);
-    if (idx >= 0) list.splice(idx, 1); else list.push(id);
-    setCompleted(list);
-    updateProgressUI();
-}
 function updateProgressUI() {
-    const done = getCompleted();
+    const done = authService.getCompletedTopics();
     const total = getAllTopics().length;
     const pct = total ? Math.round((done.length / total) * 100) : 0;
-    progressBadge.textContent = `${done.length} / ${total} done`;
-    progressPct.textContent = `${pct}%`;
+
+    if (progressBadge) progressBadge.textContent = `${done.length} / ${total} done`;
+    if (progressPct) progressPct.textContent = `${pct}%`;
+
     // Progress ring
-    const circumference = 2 * Math.PI * 17; // r=17
-    progressCircle.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+    if (progressCircle) {
+        const circumference = 2 * Math.PI * 17; // r=17
+        progressCircle.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+    }
+
     if (statCompleted) statCompleted.textContent = done.length;
     if (statTopics) statTopics.textContent = total;
     if (topicCount) topicCount.textContent = total;
+
     document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('completed', done.includes(el.dataset.topicId)));
     document.querySelectorAll('.topic-card').forEach(el => el.classList.toggle('completed', done.includes(el.dataset.topicId)));
+
     if (currentTopic) {
-        const d = isCompleted(currentTopic.id);
-        markCompleteBtn.textContent = d ? '✓ Completed' : '☐ Mark Complete';
-        markCompleteBtn.classList.toggle('completed', d);
+        const d = done.includes(currentTopic.id);
+        if (markCompleteBtn) {
+            markCompleteBtn.textContent = d ? '✓ Completed' : '☐ Mark Complete';
+            markCompleteBtn.classList.toggle('completed', d);
+        }
+    }
+}
+
+
+// ─── Presentaton Mode (Video-like) ───
+let isPresentationMode = false;
+let presentationTimeout;
+
+function togglePresentationMode() {
+    if (!currentTopic || !engine) return;
+    isPresentationMode = !isPresentationMode;
+
+    if (isPresentationMode) {
+        presentationBtn.innerHTML = '🛑 Stop Presenting';
+        presentationBtn.classList.add('active');
+        document.body.classList.add('presentation-active');
+        // Hide sidebar and right panel for full immersion
+        $('#sidebar').style.display = 'none';
+        if (aiPanel) aiPanel.classList.remove('open');
+
+        // Start from beginning
+        engine.goToStep(0);
+        runPresentationStep();
+    } else {
+        presentationBtn.innerHTML = '🎬 Present';
+        presentationBtn.classList.remove('active');
+        document.body.classList.remove('presentation-active');
+        $('#sidebar').style.display = '';
+        clearTimeout(presentationTimeout);
+        stopRishiVoice();
+    }
+}
+
+function runPresentationStep() {
+    if (!isPresentationMode || !engine || !currentTopic) return;
+
+    updatePlayBtn();
+    updateStepUI();
+    const currentStepText = stepDescription.textContent;
+
+    // Cinematic Subtitles
+    const subtitleEl = document.getElementById('canvas-subtitles');
+    if (subtitleEl) {
+        subtitleEl.textContent = currentStepText;
+        subtitleEl.classList.add('active');
+    }
+
+    // Speak the current step text
+    speakRishiVoice(currentStepText, () => {
+        // When speech finishes, wait 1.5 seconds and go to next step
+        presentationTimeout = setTimeout(() => {
+            if (isPresentationMode) {
+                if (engine.currentStepIdx < engine.steps.length - 1) {
+                    if (subtitleEl) subtitleEl.classList.remove('active');
+                    engine.nextStep();
+                    setTimeout(runPresentationStep, 400); // Small gap between steps
+                } else {
+                    // Finished
+                    if (subtitleEl) subtitleEl.classList.remove('active');
+                    togglePresentationMode();
+                }
+            }
+        }, 1500);
+    });
+}
+
+// ─── AI Chat UI & Voice Info ───
+let isVoiceEnabled = false;
+
+if (aiVoiceBtn) {
+    aiVoiceBtn.addEventListener('click', () => {
+        isVoiceEnabled = !isVoiceEnabled;
+        aiVoiceBtn.classList.toggle('active', isVoiceEnabled);
+        if (isVoiceEnabled) {
+            aiVoiceBtn.innerHTML = '🔊';
+            // Pre-warm the speech engine
+            speakRishiVoice("Voice activated. I'm ready to help you with System Design.");
+        } else {
+            aiVoiceBtn.innerHTML = '🔈';
+            stopRishiVoice();
+        }
+    });
+}
+
+function speakRishiVoice(text, onEnd) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel(); // Stop current speech
+
+    // Strip emojis and formatting for cleaner speech
+    let cleanText = text.replace(/[\u{1F600}-\u{1F6FF}]/gu, '');
+    cleanText = cleanText.replace(/[*_`#]/g, '');
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 1.05;
+    utterance.pitch = 1.0;
+
+    // Try to find a good voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Natural')) || voices[0];
+    if (preferredVoice) utterance.voice = preferredVoice;
+
+    if (onEnd) utterance.onend = onEnd;
+
+    window.speechSynthesis.speak(utterance);
+}
+
+function stopRishiVoice() {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
     }
 }
 
@@ -177,7 +315,7 @@ document.querySelectorAll('.level-btn').forEach(btn => {
 });
 
 // Search
-sidebarSearch.addEventListener('input', () => { if (!currentTopic) renderGrid(sidebarSearch.value.trim()); });
+if (sidebarSearch) sidebarSearch.addEventListener('input', () => { if (!currentTopic) renderGrid(sidebarSearch.value.trim()); });
 
 // ─── Grid ───
 function renderGrid(q) {
@@ -488,69 +626,76 @@ document.querySelectorAll('.content-tab').forEach(t => t.addEventListener('click
 function updateStepUI() {
     const step = engine.getCurrentStepData();
     if (!step) return;
-    stepIndicator.textContent = `Step ${engine.currentStep + 1} / ${engine.steps.length}`;
-    stepDescription.innerHTML = step.description || '';
+    if (stepIndicator) stepIndicator.textContent = `Step ${engine.currentStep + 1} / ${engine.steps.length}`;
+    if (stepDescription) stepDescription.innerHTML = step.description || '';
 }
-function updatePlayBtn() { playBtn.textContent = engine.isPlaying ? '⏸' : '▶'; }
-engine.onStepChange = () => updateStepUI();
-engine.onComplete = () => { engine.pause(); updatePlayBtn(); };
-playBtn.addEventListener('click', () => { engine.togglePlay(); updatePlayBtn(); });
-prevBtn.addEventListener('click', () => { engine.prevStep(); updateStepUI(); });
-nextBtn.addEventListener('click', () => { engine.nextStep(); updateStepUI(); });
-restartBtn.addEventListener('click', () => { engine.restart(); engine.play(); updatePlayBtn(); updateStepUI(); });
-speedSlider.addEventListener('input', () => { engine.setSpeed(parseFloat(speedSlider.value)); speedLabel.textContent = `${speedSlider.value}x`; });
-backBtn.addEventListener('click', goHome);
-markCompleteBtn.addEventListener('click', () => {
-    if (!currentTopic) return;
-    if (isCompleted(currentTopic.id)) return; // already done
-    openQuizModal();
-});
+function updatePlayBtn() { if (playBtn) playBtn.textContent = engine.isPlaying ? '⏸' : '▶'; }
 
-// Recording
-recordBtn.addEventListener('click', () => {
-    recorder.start(); recordBtn.style.display = 'none'; stopRecordBtn.style.display = ''; recordStatus.textContent = '● REC';
-    const iv = setInterval(() => { if (!recorder.isRecording) { clearInterval(iv); return; } const s = Math.floor(recorder.getElapsed() / 1000); recordStatus.textContent = `● REC ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }, 500);
-});
-stopRecordBtn.addEventListener('click', () => { recorder.stop(); stopRecordBtn.style.display = 'none'; recordBtn.style.display = ''; recordStatus.textContent = ''; });
-
-// Flow Visualization
-if (toggleFlowVizBtn) {
-    toggleFlowVizBtn.addEventListener('click', () => {
-        if (!flowVisualizer || !flowVisualizationContainer) return;
-        const isVisible = flowVisualizationContainer.style.display !== 'none';
-        if (isVisible) {
-            flowVisualizationContainer.style.display = 'none';
-            canvas.style.display = 'block';
-            flowVisualizer.stopAnimation();
-        } else {
-            canvas.style.display = 'none';
-            flowVisualizationContainer.style.display = 'block';
-            const topic = currentTopic?.id || 'generic';
-            const flowType = flowTypeSelector?.value || 'request-response';
-            if (flowType === 'request-response') {
-                flowVisualizer.generateRequestResponseCycle(topic);
-            } else if (flowType === 'data-flow') {
-                flowVisualizer.generateDataFlowDiagram();
-            } else if (flowType === 'caching') {
-                flowVisualizer.generateCachingVisualization();
+function initAppListeners() {
+    if (!engine) return;
+    engine.onStepChange = () => updateStepUI();
+    engine.onComplete = () => { engine.pause(); updatePlayBtn(); };
+    if (playBtn) playBtn.addEventListener('click', () => { engine.togglePlay(); updatePlayBtn(); });
+    if (prevBtn) prevBtn.addEventListener('click', () => { engine.prevStep(); updateStepUI(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { engine.nextStep(); updateStepUI(); });
+    if (restartBtn) restartBtn.addEventListener('click', () => { engine.restart(); engine.play(); updatePlayBtn(); updateStepUI(); });
+    if (speedSlider) speedSlider.addEventListener('input', () => { engine.setSpeed(parseFloat(speedSlider.value)); if (speedLabel) speedLabel.textContent = `${speedSlider.value}x`; });
+    if (backBtn) backBtn.addEventListener('click', goHome);
+    if (markCompleteBtn) markCompleteBtn.addEventListener('click', () => {
+        if (!currentTopic) return;
+        const done = authService.getCompletedTopics();
+        if (done.includes(currentTopic.id)) return;
+        openQuizModal();
+    });
+    if (recordBtn) recordBtn.addEventListener('click', () => {
+        if (!recorder) return;
+        recorder.start();
+        recordBtn.style.display = 'none';
+        if (stopRecordBtn) stopRecordBtn.style.display = '';
+        if (recordStatus) recordStatus.textContent = '● REC';
+        const iv = setInterval(() => {
+            if (!recorder.isRecording) { clearInterval(iv); return; }
+            const s = Math.floor(recorder.getElapsed() / 1000);
+            if (recordStatus) recordStatus.textContent = `● REC ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+        }, 500);
+    });
+    if (stopRecordBtn) stopRecordBtn.addEventListener('click', () => {
+        if (!recorder) return;
+        recorder.stop();
+        stopRecordBtn.style.display = 'none';
+        if (recordBtn) recordBtn.style.display = '';
+        if (recordStatus) recordStatus.textContent = '';
+    });
+    if (toggleFlowVizBtn) {
+        toggleFlowVizBtn.addEventListener('click', () => {
+            if (!flowVisualizer || !flowVisualizationContainer) return;
+            const isVisible = flowVisualizationContainer.style.display !== 'none';
+            if (isVisible) {
+                flowVisualizationContainer.style.display = 'none';
+                if (canvas) canvas.style.display = 'block';
+                flowVisualizer.stopAnimation();
+            } else {
+                if (canvas) canvas.style.display = 'none';
+                flowVisualizationContainer.style.display = 'block';
+                const topic = currentTopic?.id || 'generic';
+                const flowType = flowTypeSelector?.value || 'request-response';
+                if (flowType === 'request-response') flowVisualizer.generateRequestResponseCycle(topic);
+                else if (flowType === 'data-flow') flowVisualizer.generateDataFlowDiagram();
+                else if (flowType === 'caching') flowVisualizer.generateCachingVisualization();
             }
-        }
-    });
-}
-
-if (flowTypeSelector) {
-    flowTypeSelector.addEventListener('change', () => {
-        if (!flowVisualizer || flowVisualizationContainer.style.display === 'none') return;
-        const flowType = flowTypeSelector.value;
-        const topic = currentTopic?.id || 'generic';
-        if (flowType === 'request-response') {
-            flowVisualizer.generateRequestResponseCycle(topic);
-        } else if (flowType === 'data-flow') {
-            flowVisualizer.generateDataFlowDiagram();
-        } else if (flowType === 'caching') {
-            flowVisualizer.generateCachingVisualization();
-        }
-    });
+        });
+    }
+    if (flowTypeSelector) {
+        flowTypeSelector.addEventListener('change', () => {
+            if (!flowVisualizer || flowVisualizationContainer?.style.display === 'none') return;
+            const flowType = flowTypeSelector.value;
+            const topic = currentTopic?.id || 'generic';
+            if (flowType === 'request-response') flowVisualizer.generateRequestResponseCycle(topic);
+            else if (flowType === 'data-flow') flowVisualizer.generateDataFlowDiagram();
+            else if (flowType === 'caching') flowVisualizer.generateCachingVisualization();
+        });
+    }
+    if (presentationBtn) presentationBtn.addEventListener('click', togglePresentationMode);
 }
 
 // Keyboard
@@ -560,7 +705,14 @@ document.addEventListener('keydown', e => {
         if (e.key === 'Escape') { if (quizModal) quizModal.style.display = 'none'; if (algoModal) algoModal.style.display = 'none'; }
         return;
     }
-    switch (e.key) { case ' ': e.preventDefault(); engine.togglePlay(); updatePlayBtn(); break; case 'ArrowRight': engine.nextStep(); updateStepUI(); break; case 'ArrowLeft': engine.prevStep(); updateStepUI(); break; case 'r': engine.restart(); engine.play(); updatePlayBtn(); updateStepUI(); break; case 'Escape': if (currentTopic) goHome(); break; }
+    if (!engine) return;
+    switch (e.key) {
+        case ' ': e.preventDefault(); engine.togglePlay(); updatePlayBtn(); break;
+        case 'ArrowRight': engine.nextStep(); updateStepUI(); break;
+        case 'ArrowLeft': engine.prevStep(); updateStepUI(); break;
+        case 'r': engine.restart(); engine.play(); updatePlayBtn(); updateStepUI(); break;
+        case 'Escape': if (currentTopic) goHome(); break;
+    }
 });
 
 // ─── Algorithm Modal ───
@@ -673,24 +825,20 @@ function submitQuiz() {
 if (quizCloseBtn) quizCloseBtn.addEventListener('click', () => { quizModal.style.display = 'none'; });
 if (quizModal) quizModal.addEventListener('click', e => { if (e.target === quizModal) quizModal.style.display = 'none'; });
 
-// ─── AI Panel ───
-const aiPanel = $('#ai-panel');
-const aiMessages = $('#ai-messages');
-const aiInput = $('#ai-input');
-const aiSendBtn = $('#ai-send-btn');
-const aiCloseBtn = $('#ai-close-btn');
-const aiToggleBtn = document.querySelector('.ai-toggle-btn');
-
-const toggleAiPanel = () => {
-    isAiPanelOpen = !isAiPanelOpen;
-    if (aiPanel) aiPanel.classList.toggle('open', isAiPanelOpen);
-    if (isAiPanelOpen && aiMessages && aiMessages.children.length === 0) {
-        addAiMessage('assistant', '🧙‍♂️ Hi! I\'m SysWizard AI. Ask me anything about system design — I\'ll explain concepts, algorithms, trade-offs, and more!');
+// ─── Toggle Complete ───
+function toggleComplete(topicId) {
+    const done = authService.getCompletedTopics();
+    if (done.includes(topicId)) {
+        authService.markTopicIncomplete(topicId);
+    } else {
+        authService.markTopicComplete(topicId);
     }
+    updateProgressUI();
 }
 
-if (aiToggleBtn) aiToggleBtn.addEventListener('click', toggleAiPanel);
-if (aiCloseBtn) aiCloseBtn.addEventListener('click', () => { isAiPanelOpen = false; if (aiPanel) aiPanel.classList.remove('open'); });
+// ─── AI Panel ───
+// Logic moved to FeatureIntegration.js to prevent conflicts
+// but we keep handleAiSend and addAiMessage here for core chat functionality.
 
 const addAiMessage = (role, text) => {
     if (!aiMessages) return;
@@ -966,63 +1114,7 @@ function generateDBSchema(q, detected) {
     return schema;
 }
 
-const generateBuiltInAnswer = (question, topicCtx) => {
-    const q = question.toLowerCase();
-    let answer = '';
-
-    if (topicCtx) {
-        const { title, overview, howItWorks, keyConcepts, realWorld, pros, cons, algorithms, interviewTips } = topicCtx;
-
-        if (q.includes('what is') || q.includes('explain') || q.includes('overview') || q.includes('define')) {
-            answer = `${title}: ${overview}`;
-            if (keyConcepts.length > 0) answer += `\n\nKey concepts: ${keyConcepts.slice(0, 3).join('; ')}.`;
-        } else if (q.includes('how') || q.includes('work')) {
-            answer = `How ${title} works:\n${howItWorks.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
-        } else if (q.includes('algorithm') || q.includes('algo')) {
-            if (algorithms.length > 0) {
-                answer = `Algorithms used in ${title}:\n${algorithms.map(a => `• ${a.name} (${a.type}) — ${a.description}. Complexity: ${a.complexity}`).join('\n')}`;
-            } else {
-                answer = `${title} doesn't have specific named algorithms, but the key techniques include: ${keyConcepts.slice(0, 4).join(', ')}.`;
-            }
-        } else if (q.includes('pros') || q.includes('cons') || q.includes('trade') || q.includes('advantage') || q.includes('disadvantage')) {
-            answer = `Trade-offs of ${title}:\n\n✅ Pros:\n${pros.map(p => `• ${p}`).join('\n')}\n\n❌ Cons:\n${cons.map(c => `• ${c}`).join('\n')}`;
-        } else if (q.includes('real') || q.includes('example') || q.includes('use case') || q.includes('where')) {
-            answer = `Real-world usage of ${title}: ${realWorld}`;
-        } else if (q.includes('interview') || q.includes('tip')) {
-            if (interviewTips.length > 0) {
-                answer = `Interview tips for ${title}:\n${interviewTips.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
-            } else {
-                answer = `For ${title} interviews, focus on: ${overview}\n\nKey points to mention: ${keyConcepts.slice(0, 3).join(', ')}.`;
-            }
-        } else {
-            answer = `About ${title}: ${overview}\n\nHow it works: ${howItWorks.slice(0, 3).join('. ')}.\n\nKey concepts: ${keyConcepts.slice(0, 3).join(', ')}.${realWorld ? '\n\nReal-world: ' + realWorld : ''}`;
-        }
-    } else {
-        // Check if user is describing an app idea
-        const ideaKeywords = ['build', 'create', 'design', 'make', 'develop', 'app', 'application', 'system', 'platform', 'website', 'service', 'want to', 'idea', 'project', 'startup', 'product', 'need a', 'like uber', 'like netflix', 'like whatsapp', 'like instagram', 'like youtube', 'like twitter', 'like amazon', 'like spotify', 'e-commerce', 'ecommerce', 'chat', 'social media', 'marketplace', 'booking', 'delivery', 'game', 'streaming', 'payment', 'food', 'ride', 'hotel', 'travel', 'health', 'fitness', 'education', 'learning'];
-        const isAppIdea = ideaKeywords.some(k => q.includes(k)) && q.length > 15;
-
-        if (isAppIdea) {
-            answer = generateSystemDesign(question);
-        } else {
-            const allTopics = getAllTopics();
-            const matchingTopics = allTopics.filter(t =>
-                t.title.toLowerCase().includes(q) ||
-                t.tags.some(tag => q.includes(tag.toLowerCase())) ||
-                (t.content?.overview || '').toLowerCase().includes(q)
-            );
-
-            if (matchingTopics.length > 0) {
-                const t = matchingTopics[0];
-                answer = `${t.title}: ${t.content?.overview || t.description}\n\nSelect this topic from the sidebar to see its full explanation, animation, algorithms, and quiz!`;
-            } else {
-                answer = `Hi! I'm Rishi, your System Design AI. I can:\n\n🏗️ Design systems — Describe your app idea and I'll create a full architecture\n📚 Explain topics — Ask about any of the 64 topics\n💡 Answer questions — Ask about algorithms, trade-offs, or interview tips\n\nTry: "Design a food delivery app" or "Explain load balancing"`;
-            }
-        }
-    }
-
-    return answer;
-}
+// RishiAgent handles built-in answers and fallbacks now.
 
 const handleAiSend = async () => {
     const text = aiInput ? aiInput.value.trim() : '';
@@ -1071,15 +1163,13 @@ const handleAiSend = async () => {
             window._sdvInstance.generate(text);
         }
     } else {
-        // For general questions, try Ollama first, fallback to built-in
+        // Use RishiAgent for high-quality answers
         try {
-            await ollama.answerQuestion(
-                currentTopic?.title || 'System Design',
-                text,
-                (chunk, full) => { thinkingDiv.textContent = full; }
-            );
-        } catch {
-            thinkingDiv.textContent = generateBuiltInAnswer(text, topicCtx);
+            const result = await rishiAgent.askQuestion(text);
+            thinkingDiv.textContent = result.answer;
+            if (isVoiceEnabled) speakRishiVoice(result.answer);
+        } catch (e) {
+            thinkingDiv.textContent = "I'm sorry, I'm having trouble connecting right now. Please try again later.";
         }
     }
     thinkingDiv.classList.remove('ai-thinking');
@@ -1090,79 +1180,127 @@ if (aiSendBtn) aiSendBtn.addEventListener('click', handleAiSend);
 if (aiInput) aiInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAiSend(); });
 
 
-// Init — Auth gate
+// Init — Auth gate & Startup
 const authScreen = document.getElementById('auth-screen');
 const appEl = document.getElementById('app');
-const loginForm = document.getElementById('login-form');
-const signupForm = document.getElementById('signup-form');
-const showSignupLink = document.getElementById('show-signup');
-const showLoginLink = document.getElementById('show-login');
-const loginError = document.getElementById('login-error');
-const signupError = document.getElementById('signup-error');
 const userAvatarEl = document.getElementById('user-avatar');
 const userNameEl = document.getElementById('user-name');
 const logoutBtn = document.getElementById('logout-btn');
 
 function showApp() {
-    if (authScreen) { authScreen.classList.add('hidden'); setTimeout(() => authScreen.style.display = 'none', 500); }
+    console.log('✨ main.js: session detected, launching app');
+
+    // Initialize core engine instances now that DOM is ready
+    const canvasEl = document.querySelector('#main-canvas');
+    const flowCanvasEl = document.querySelector('#flow-canvas');
+    const designVisualizerEl = document.querySelector('#design-visualizer');
+
+    engine = new AnimationEngine(canvasEl);
+    recorder = canvasEl ? new VideoRecorder(canvasEl) : null;
+    sdv = designVisualizerEl ? new SystemDesignVisualizer(designVisualizerEl) : null;
+    flowVisualizer = flowCanvasEl ? new AdvancedFlowVisualizer(flowCanvasEl) : null;
+
+    if (authScreen) {
+        authScreen.classList.add('hidden');
+        setTimeout(() => { authScreen.style.display = 'none'; }, 600);
+    }
     if (appEl) appEl.style.display = 'flex';
+
     const user = authService.getCurrentUser();
     if (user) {
         if (userAvatarEl) userAvatarEl.textContent = user.avatar || user.name[0];
         if (userNameEl) userNameEl.textContent = user.name;
     }
+
     renderSidebar();
     renderCategoryTabs();
     renderGrid();
     updateProgressUI();
-    // Initialize enhanced features: Rishi AI, Design Generator, Visualizations
+    initAppListeners();
+    switchView('home');
     featureIntegration.initialize();
 }
 
 function showAuth() {
-    if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.remove('hidden'); }
+    console.log('🔒 main.js: no session, showing auth');
+    if (authScreen) {
+        authScreen.style.display = 'flex';
+        authScreen.classList.remove('hidden');
+    }
     if (appEl) appEl.style.display = 'none';
 }
 
-// Toggle login/signup
-if (showSignupLink) showSignupLink.addEventListener('click', e => {
+function switchView(viewId) {
+    const views = {
+        'home': homeView,
+        'topic': topicView,
+        'library': libraryView,
+        'nano-banana': nanoBananaView
+    };
+
+    Object.keys(views).forEach(key => {
+        if (views[key]) views[key].style.display = (key === viewId) ? (viewId === 'topic' ? 'flex' : 'block') : 'none';
+    });
+}
+
+// ─── Auth Logic (Consolidated from authGate) ───
+if (showSignupLink) showSignupLink.onclick = (e) => {
     e.preventDefault();
     loginForm?.classList.remove('active');
     signupForm?.classList.add('active');
     if (loginError) loginError.textContent = '';
-});
-if (showLoginLink) showLoginLink.addEventListener('click', e => {
+};
+
+if (showLoginLink) showLoginLink.onclick = (e) => {
     e.preventDefault();
     signupForm?.classList.remove('active');
     loginForm?.classList.add('active');
     if (signupError) signupError.textContent = '';
-});
+};
 
-// Login
-if (loginForm) loginForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const email = document.getElementById('login-email')?.value || '';
-    const password = document.getElementById('login-password')?.value || '';
-    const result = authService.login(email, password);
-    if (result.success) { showApp(); }
-    else if (loginError) { loginError.textContent = result.error; }
-});
+if (loginForm) {
+    loginForm.onsubmit = (e) => {
+        e.preventDefault();
+        const email = $('#login-email')?.value || '';
+        const password = $('#login-password')?.value || '';
+        const result = authService.login(email, password);
+        if (result.success) {
+            window.location.reload();
+        } else {
+            if (loginError) loginError.textContent = result.error;
+        }
+    };
+}
 
-// Signup
-if (signupForm) signupForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = document.getElementById('signup-name')?.value || '';
-    const email = document.getElementById('signup-email')?.value || '';
-    const password = document.getElementById('signup-password')?.value || '';
-    const result = authService.signup(name, email, password);
-    if (result.success) { showApp(); }
-    else if (signupError) { signupError.textContent = result.error; }
-});
+if (signupForm) {
+    signupForm.onsubmit = (e) => {
+        e.preventDefault();
+        const name = $('#signup-name')?.value || '';
+        const email = $('#signup-email')?.value || '';
+        const password = $('#signup-password')?.value || '';
+        if (!name || !email || !password) {
+            if (signupError) signupError.textContent = "Please fill in all fields.";
+            return;
+        }
+        const result = authService.signup(name, email, password);
+        if (result.success) {
+            window.location.reload();
+        } else {
+            if (signupError) signupError.textContent = result.error;
+        }
+    };
+}
+
+// Sidebar Navigation
+document.getElementById('nav-home-btn')?.addEventListener('click', () => switchView('home'));
+document.getElementById('sidebar-library-btn')?.addEventListener('click', () => switchView('library'));
+document.getElementById('sidebar-nano-banana-btn')?.addEventListener('click', () => switchView('nano-banana'));
 
 // Logout
 if (logoutBtn) logoutBtn.addEventListener('click', () => {
+    console.log('🚪 main.js: logging out');
     authService.logout();
-    showAuth();
+    window.location.reload();
 });
 
 // Check session on load
