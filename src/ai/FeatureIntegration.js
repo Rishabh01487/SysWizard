@@ -3,8 +3,10 @@
  * Handles all event listeners and UI interactions
  */
 
-import { setupRishiChatPanel, setupDesignGeneratorPanel, setupTopicVisualizationPanel, 
-         addChatMessage, showLoadingIndicator, removeLoadingIndicator } from '../ui/EnhancedComponents.js';
+import {
+  setupRishiChatPanel, setupDesignGeneratorPanel, setupTopicVisualizationPanel,
+  addChatMessage, showLoadingIndicator, removeLoadingIndicator
+} from '../ui/EnhancedComponents.js';
 import { rishiAgent } from './RishiAgent.js';
 import SystemDesignGenerator from '../engine/SystemDesignGenerator.js';
 import ArchitectureVisualizer from '../engine/ArchitectureVisualizer.js';
@@ -72,14 +74,20 @@ export class FeatureIntegration {
     // Create panels container
     const container = document.createElement('div');
     container.id = 'feature-panels-container';
-    container.innerHTML = setupRishiChatPanel() + setupDesignGeneratorPanel() + setupTopicVisualizationPanel();
+    // Remove setupRishiChatPanel() as we'll use the one in index.html
+    container.innerHTML = setupDesignGeneratorPanel() + setupTopicVisualizationPanel();
     document.body.appendChild(container);
 
     // Store panel references
     setTimeout(() => {
-      this.rishiPanel = document.querySelector('#rishi-chat-panel');
+      this.rishiPanel = document.querySelector('#ai-panel');
       this.generatorPanel = document.querySelector('#design-generator-panel');
       this.vizPanel = document.querySelector('#topic-viz-panel');
+
+      // Ensure the existing Rishi panel from main.js is synchronized
+      if (this.rishiPanel) {
+        this.rishiPanel.classList.remove('open');
+      }
       this.hideAllPanels();
     }, 50);
   }
@@ -90,27 +98,27 @@ export class FeatureIntegration {
   attachEventListeners() {
     // Wait for panels to be available, then attach listeners
     const attachWithDelay = () => {
-      // Rishi Chat Events
-      const btnRishi = document.querySelector('#btn-rishi');
-      const closeRishi = document.querySelector('#close-rishi-btn');
-      const rishiSendBtn = document.querySelector('#rishi-send-btn');
-      const rishiQuestion = document.querySelector('#rishi-question');
+      // Rishi Chat Events — both sidebar and top bar buttons
+      const sidebarRishiBtn = document.querySelector('#ai-toggle-btn');
+      const topBarRishiBtn = document.querySelector('#btn-rishi');
+      const closeRishi = document.querySelector('#ai-close-btn');
+
+      if (sidebarRishiBtn) sidebarRishiBtn.onclick = () => this.togglePanel('rishi');
+      if (topBarRishiBtn) topBarRishiBtn.onclick = () => this.togglePanel('rishi');
+      if (closeRishi) closeRishi.onclick = () => this.hideAllPanels();
+
+      // We'll let main.js handle the send button for the existing panel 
+      // but we link it here if needed for suggestions
       const suggestions = document.querySelectorAll('.suggestion-btn');
 
-      if (btnRishi) btnRishi.addEventListener('click', () => this.togglePanel('rishi'));
-      if (closeRishi) closeRishi.addEventListener('click', () => this.hideAllPanels());
-      if (rishiSendBtn) rishiSendBtn.addEventListener('click', () => this.sendRishiQuestion());
-      if (rishiQuestion) rishiQuestion.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') this.sendRishiQuestion();
-      });
-
       suggestions.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.onclick = (e) => {
           const q = e.target.dataset.q;
-          const input = document.querySelector('#rishi-question');
+          const input = document.querySelector('#ai-input');
           if (input) input.value = q;
-          this.sendRishiQuestion();
-        });
+          // Trigger main.js dispatch or same logic
+          document.querySelector('#ai-send-btn')?.click();
+        };
       });
 
       // Design Generator Events
@@ -139,16 +147,12 @@ export class FeatureIntegration {
       });
 
       // If not all loaded yet, try again
-      if (!btnRishi || !btnGenerator || !btnViz) {
+      if (!btnGenerator || !btnViz) {
         setTimeout(attachWithDelay, 200);
       } else {
-        console.log('✅ All event listeners attached successfully');
-        // Try clicking first topic by default
-        const firstTopic = document.querySelector('.topic-selector-btn');
-        if (firstTopic && !document.querySelector('#flow-visualization-canvas').toDataURL) {
-          firstTopic.click();
-        }
+        console.log('✅ Feature integration event listeners attached');
       }
+
     };
 
     attachWithDelay();
@@ -158,7 +162,7 @@ export class FeatureIntegration {
    * Send question to Rishi AI
    */
   async sendRishiQuestion() {
-    const inputEl = document.querySelector('#rishi-question');
+    const inputEl = document.querySelector('#ai-input') || document.querySelector('#rishi-question');
     const question = inputEl?.value?.trim();
 
     if (!question) return;
@@ -227,13 +231,13 @@ export class FeatureIntegration {
       if (canvas) {
         const visualizer = new ArchitectureVisualizer('architecture-canvas');
         visualizer.drawArchitecture(design);
-        
+
         // Also show topology view
         const topologyCanvas = document.createElement('canvas');
         topologyCanvas.width = 1000;
         topologyCanvas.height = 500;
         topologyCanvas.style.cssText = 'border: 1px solid #475569; border-radius: 8px; margin: 20px 0; display: block; background: #0f172a; width: 100%; height: auto;';
-        
+
         const topologyViz = new ArchitectureVisualizer(topologyCanvas.id);
         topologyViz.ctx = topologyCanvas.getContext('2d');
         topologyViz.width = topologyCanvas.width;
@@ -410,20 +414,36 @@ export class FeatureIntegration {
    * Toggle panel visibility
    */
   togglePanel(panelName) {
-    this.hideAllPanels();
-
-    switch (panelName) {
-      case 'rishi':
-        this.rishiPanel?.style.setProperty('display', 'flex', 'important');
-        document.querySelector('#rishi-question')?.focus();
-        break;
-      case 'generator':
-        this.generatorPanel?.style.setProperty('display', 'flex', 'important');
+    // We don't hide everything if we want to toggle. Just handle specific one.
+    if (panelName === 'rishi') {
+      const isOpen = this.rishiPanel?.classList.contains('open');
+      this.hideAllPanels(); // Close others first
+      if (!isOpen) {
+        this.rishiPanel?.classList.add('open');
+        // Show welcome message on first open
+        const messagesDiv = document.querySelector('#ai-messages');
+        if (messagesDiv && messagesDiv.children.length === 0) {
+          const welcomeDiv = document.createElement('div');
+          welcomeDiv.className = 'ai-msg ai-msg-assistant';
+          welcomeDiv.textContent = '🧙‍♂️ Hi! I\'m Rishi — your System Design AI. Ask me anything about system design — I\'ll explain concepts, algorithms, trade-offs, and more! You can also describe an app idea and I\'ll generate a visual architecture for you.';
+          messagesDiv.appendChild(welcomeDiv);
+        }
+        const input = document.querySelector('#ai-input') || document.querySelector('#rishi-question');
+        input?.focus();
+      }
+    } else if (panelName === 'generator') {
+      const isOpen = this.generatorPanel?.style.display === 'flex';
+      this.hideAllPanels();
+      if (!isOpen && this.generatorPanel) {
+        this.generatorPanel.style.display = 'flex';
         document.querySelector('#app-description')?.focus();
-        break;
-      case 'viz':
-        this.vizPanel?.style.setProperty('display', 'flex', 'important');
-        break;
+      }
+    } else if (panelName === 'viz') {
+      const isOpen = this.vizPanel?.style.display === 'flex';
+      this.hideAllPanels();
+      if (!isOpen && this.vizPanel) {
+        this.vizPanel.style.display = 'flex';
+      }
     }
   }
 
@@ -431,9 +451,9 @@ export class FeatureIntegration {
    * Hide all panels
    */
   hideAllPanels() {
-    this.rishiPanel?.style.setProperty('display', 'none', 'important');
-    this.generatorPanel?.style.setProperty('display', 'none', 'important');
-    this.vizPanel?.style.setProperty('display', 'none', 'important');
+    this.rishiPanel?.classList.remove('open');
+    if (this.generatorPanel) this.generatorPanel.style.display = 'none';
+    if (this.vizPanel) this.vizPanel.style.display = 'none';
   }
 
   /**
