@@ -1604,8 +1604,23 @@ const handleAiSend = async () => {
 
     // Check if this is an app idea — if so, use the built-in structured generator immediately
     const q = text.toLowerCase();
-    const ideaKeywords = ['build', 'create', 'design', 'make', 'develop', 'app', 'application', 'system', 'platform', 'website', 'service', 'want to', 'idea', 'project', 'startup', 'product', 'need a', 'like uber', 'like netflix', 'like whatsapp', 'like instagram', 'like youtube', 'like twitter', 'like amazon', 'like spotify', 'e-commerce', 'ecommerce', 'chat app', 'social media', 'marketplace', 'booking', 'delivery', 'streaming', 'food', 'ride', 'hotel', 'travel'];
-    const isAppIdea = ideaKeywords.some(k => q.includes(k)) && q.length > 15;
+
+    // CODE QUESTIONS take priority — never send to design visualizer
+    const codeKeywords = ['code', 'implement', 'implementation', 'write', 'snippet', 'example code',
+        'boilerplate', 'starter', 'framework code', 'help me code', 'show me how', 'how do i',
+        'how to implement', 'sample code', 'basic code', 'coding', 'function', 'class', 'method',
+        'syntax', 'script', 'program', 'algorithm code', 'step by step code'];
+    const isCodeRequest = codeKeywords.some(k => q.includes(k));
+
+    const ideaKeywords = ['design an app', 'design a platform', 'design a system', 'design a service',
+        'design like uber', 'design like netflix', 'design like whatsapp', 'design like instagram',
+        'design like twitter', 'design like amazon', 'design like spotify',
+        'architecture for', 'system design for', 'build an app', 'build a platform',
+        'create an app', 'create a platform', 'e-commerce', 'ecommerce',
+        'marketplace app', 'booking app', 'delivery app', 'streaming app',
+        'ride sharing', 'food delivery', 'social media app', 'chat app'];
+    const isAppIdea = !isCodeRequest && ideaKeywords.some(k => q.includes(k)) && q.length > 15;
+
 
     if (isAppIdea) {
         // Generate the structured design text (for presentation)
