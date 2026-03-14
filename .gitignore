@@ -4,3 +4,9 @@ dist
 *.local
 .env
 .env.*
+node_modules
+dist
+*.log
+*.txt
+*.png
+!README.md
