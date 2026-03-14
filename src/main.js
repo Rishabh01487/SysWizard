@@ -1124,166 +1124,165 @@ const addAiMessage = (role, text) => {
     aiMessages.scrollTop = aiMessages.scrollHeight;
 }
 
-// ─── Present Rishi Design as Animation ───
+// ─── Present Rishi Design — synced to live visualization ───
 function presentRishiDesign(designText) {
-    // ── Build natural-language steps from the design text ──
-    // Instead of reading raw text (which has slashes, code, symbols),
-    // we parse sections and build proper English narration scripts.
+
+    // ── CASE 1: SystemDesignVisualizer is active ──
+    // Walk through its own pre-built steps, highlight nodes, and narrate each step.
+    const sdv = window._sdvInstance;
+    const vizEl = document.getElementById('design-visualizer');
+    const sdvActive = sdv && vizEl && vizEl.style.display !== 'none' && sdv.steps && sdv.steps.length > 0;
+
+    if (sdvActive) {
+        // Close AI panel so diagram is fully visible
+        const aiPanelEl = document.getElementById('ai-panel');
+        if (aiPanelEl) aiPanelEl.classList.remove('open');
+
+        // Stop any auto-play the SDV might be doing
+        sdv.stop();
+
+        // Add a narration bar at the bottom of the visualizer (if not already there)
+        let narrationBar = vizEl.querySelector('.sdv-narration-bar');
+        if (!narrationBar) {
+            narrationBar = document.createElement('div');
+            narrationBar.className = 'sdv-narration-bar';
+            narrationBar.style.cssText = `
+                position: sticky; bottom: 0; left: 0; right: 0;
+                background: linear-gradient(135deg, rgba(15,11,30,0.97), rgba(107,29,110,0.18));
+                border-top: 1px solid rgba(107,29,110,0.4);
+                padding: 12px 20px; display: flex; align-items: center; gap: 12px;
+                z-index: 100; backdrop-filter: blur(8px);
+            `;
+            vizEl.appendChild(narrationBar);
+        }
+
+        let isPresenting = true;
+
+        // Stop button
+        const stopBtn = document.createElement('button');
+        stopBtn.textContent = '⏹ Stop';
+        stopBtn.style.cssText = 'background:rgba(220,38,38,0.2);border:1px solid #dc2626;color:#fca5a5;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:0.8rem;white-space:nowrap;';
+        stopBtn.onclick = () => {
+            isPresenting = false;
+            stopRishiVoice();
+            narrationBar.remove();
+        };
+
+        const narrationText = document.createElement('span');
+        narrationText.style.cssText = 'color:#e2e8f0;font-size:0.9rem;line-height:1.4;flex:1;';
+        narrationText.textContent = '🎬 Starting presentation...';
+
+        const stepCounter = document.createElement('span');
+        stepCounter.style.cssText = 'color:#c084fc;font-size:0.8rem;font-weight:600;white-space:nowrap;';
+
+        narrationBar.innerHTML = '';
+        narrationBar.appendChild(stopBtn);
+        narrationBar.appendChild(narrationText);
+        narrationBar.appendChild(stepCounter);
+
+        const totalSteps = sdv.steps.length;
+
+        function narrateStep(idx) {
+            if (!isPresenting || idx >= totalSteps) {
+                if (isPresenting) {
+                    narrationText.textContent = '✅ Presentation complete! Use the ← → buttons to review any step.';
+                    speakRishiVoice('Presentation complete. Use the navigation buttons to revisit any step.');
+                }
+                return;
+            }
+
+            const step = sdv.steps[idx];
+
+            // Highlight the nodes in the live diagram
+            sdv._highlightStep(idx);
+
+            // Update narration bar
+            stepCounter.textContent = `Step ${idx + 1} / ${totalSteps}`;
+            narrationText.textContent = `${step.title} — ${step.desc}`;
+
+            // Build natural English narration from step data
+            const narration = `Step ${idx + 1}. ${step.title}. ${step.desc} ${step.impl ? 'Implementation: ' + step.impl : ''} ${step.algo ? 'Algorithm used: ' + step.algo : ''}`;
+
+            speakRishiVoice(narration, () => {
+                if (!isPresenting) return;
+                setTimeout(() => narrateStep(idx + 1), 600);
+            });
+        }
+
+        narrateStep(0);
+        return;
+    }
+
+    // ── CASE 2: No SDV active — fallback to canvas slide mode ──
+    // Parse design text and show animated slides on the main canvas.
 
     const lines = designText.split('\n').map(l => l.trim()).filter(Boolean);
 
-    // Helper: strip all technical syntax to plain English
     function toSpeakable(raw) {
         return raw
             .replace(/[━─=\-]{3,}/g, '')
             .replace(/\b(GET|POST|PUT|PATCH|DELETE|WS)\s+\/[\w\/:\-\.]+/gi, (m) => {
                 const method = m.split(' ')[0];
-                return method === 'GET' ? 'read endpoint' : method === 'POST' ? 'create endpoint' : method === 'PUT' || method === 'PATCH' ? 'update endpoint' : 'delete endpoint';
+                return method === 'GET' ? 'read endpoint' : method === 'POST' ? 'create endpoint' : 'update or delete endpoint';
             })
-            .replace(/\/[\w\/:\-\.\?=&]+/g, '')
-            .replace(/\/\/.*/g, '')
-            .replace(/—/g, ', ')
-            .replace(/->/g, ' to ')
-            .replace(/[*_`#<>{}\[\]\(\)]/g, ' ')
-            .replace(/[ \t]{2,}/g, ' ')
-            .replace(/\n/g, ' ')
-            .trim();
+            .replace(/\/[\w\/:\-\.\?=&]+/g, '').replace(/\/\/.*/g, '')
+            .replace(/—/g, ', ').replace(/->/g, ' to ')
+            .replace(/[*_`#<>{}[\]()]/g, ' ').replace(/[ \t]{2,}/g, ' ').trim();
     }
 
-    // ── Identify sections ──
     const sectionMap = {};
     let currentKey = 'intro';
     sectionMap[currentKey] = [];
-
     for (const line of lines) {
-        if (line.includes('ARCHITECTURE OVERVIEW') || line.includes('ARCHITECTURE')) { currentKey = 'architecture'; sectionMap[currentKey] = []; }
+        if (line.includes('ARCHITECTURE')) { currentKey = 'architecture'; sectionMap[currentKey] = []; }
         else if (line.includes('API ENDPOINT')) { currentKey = 'apis'; sectionMap[currentKey] = []; }
-        else if (line.includes('ALGORITHM') || line.includes('DATA STRUCT')) { currentKey = 'algorithms'; sectionMap[currentKey] = []; }
+        else if (line.includes('ALGORITHM')) { currentKey = 'algorithms'; sectionMap[currentKey] = []; }
         else if (line.includes('DATABASE') || line.includes('SCHEMA')) { currentKey = 'database'; sectionMap[currentKey] = []; }
         else if (line.includes('SCALING')) { currentKey = 'scaling'; sectionMap[currentKey] = []; }
-        else if (line.includes('COMPLEXITY') || line.includes('ESTIMATED')) { currentKey = 'complexity'; sectionMap[currentKey] = []; }
-        else {
-            if (!sectionMap[currentKey]) sectionMap[currentKey] = [];
-            sectionMap[currentKey].push(line);
-        }
+        else { if (!sectionMap[currentKey]) sectionMap[currentKey] = []; sectionMap[currentKey].push(line); }
     }
 
-    // Extract the app name from the first line
-    const titleLine = lines.find(l => l.includes('SYSTEM DESIGN:') || l.includes('SYSTEM DESIGN'));
-    const appName = titleLine
-        ? titleLine.replace(/[🏗️━─\-]/g, '').replace('SYSTEM DESIGN:', '').trim()
-        : 'this application';
+    const titleLine = lines.find(l => l.includes('SYSTEM DESIGN'));
+    const appName = titleLine ? titleLine.replace(/[🏗️━─\-]/g, '').replace('SYSTEM DESIGN:', '').trim() : 'this application';
 
-    // ── Build human-readable narration steps ──
-    const steps = [];
+    const steps = [
+        { title: `System Design: ${appName}`, display: `🏗️ ${appName}`, narration: `Welcome to the system design presentation for ${appName}. We will walk through the complete architecture including the frontend, backend, APIs, algorithms, database, and scaling strategy.` }
+    ];
 
-    // Step 1 – Introduction
-    steps.push({
-        title: `System Design: ${appName}`,
-        display: `🏗️ ${appName}`,
-        narration: `Welcome to the system design presentation for ${appName}. We will walk through the complete architecture, including how the frontend, backend, and databases are connected, what APIs power the app, which algorithms make it fast and reliable, and how it scales to millions of users.`
-    });
+    const arch = (sectionMap.architecture || []).filter(l => l.length > 3);
+    if (arch.length) steps.push({ title: 'Architecture Overview', display: arch.slice(0, 6).map(toSpeakable).join('\n'), narration: `Let us start with the architecture. ${arch.map(toSpeakable).join('. ')}. Together these components power ${appName}.` });
 
-    // Step 2 – Architecture
-    const archLines = (sectionMap.architecture || []).filter(l => l.length > 3);
-    if (archLines.length > 0) {
-        const readable = archLines.map(l => toSpeakable(l)).filter(Boolean).join('. ');
-        steps.push({
-            title: 'Architecture Overview',
-            display: archLines.slice(0, 6).map(l => toSpeakable(l)).join('\n'),
-            narration: `Let us start with the architecture overview. ${readable}. Together these components form the core infrastructure that powers ${appName}.`
-        });
-    }
+    const apis = (sectionMap.apis || []).filter(l => l.length > 3);
+    if (apis.length) steps.push({ title: 'API Endpoints', display: apis.slice(0, 6).join('\n'), narration: `The key APIs handle: ${apis.map(l => l.replace(/\b(GET|POST|PUT|PATCH|DELETE|WS)\s+\/[\w\/:\-\.]+/gi, '').replace(/—/g, ', ').trim()).filter(Boolean).slice(0, 5).join('. ')}.` });
 
-    // Step 3 – APIs
-    const apiLines = (sectionMap.apis || []).filter(l => l.length > 3);
-    if (apiLines.length > 0) {
-        // Convert API lines to natural language
-        const apiDesc = apiLines.map(l => {
-            const parts = l.replace(/\b(GET|POST|PUT|PATCH|DELETE|WS)\s+\/[\w\/:\-\.]+/gi, '').replace(/—/g, ', ').trim();
-            return parts;
-        }).filter(Boolean).slice(0, 6).join('. ');
-        steps.push({
-            title: 'API Endpoints',
-            display: apiLines.slice(0, 6).join('\n'),
-            narration: `Now let us look at the key APIs that make up ${appName}. The main endpoints handle: ${apiDesc}. These endpoints are secured with JWT tokens and follow RESTful conventions for consistency.`
-        });
-    }
+    const algos = (sectionMap.algorithms || []).filter(l => l.length > 3);
+    if (algos.length) steps.push({ title: 'Algorithms & Data Structures', display: algos.slice(0, 6).join('\n'), narration: `Key algorithms for ${appName}: ${algos.map(toSpeakable).join('. ')}.` });
 
-    // Step 4 – Algorithms
-    const algoLines = (sectionMap.algorithms || []).filter(l => l.length > 3);
-    if (algoLines.length > 0) {
-        const algoDesc = algoLines.map(l => toSpeakable(l)).filter(Boolean).join('. ');
-        steps.push({
-            title: 'Algorithms & Data Structures',
-            display: algoLines.slice(0, 6).join('\n'),
-            narration: `A powerful system needs smart algorithms. For ${appName}, the key algorithms are: ${algoDesc}. These ensure the system performs efficiently even under high load.`
-        });
-    }
+    const db = (sectionMap.database || []).filter(l => l.length > 3);
+    if (db.length) steps.push({ title: 'Database Schema', display: db.slice(0, 8).join('\n'), narration: `The database schema for ${appName}: ${db.map(toSpeakable).join('. ')}.` });
 
-    // Step 5 – Database
-    const dbLines = (sectionMap.database || []).filter(l => l.length > 3);
-    if (dbLines.length > 0) {
-        const dbDesc = dbLines.map(l => toSpeakable(l)).filter(Boolean).join('. ');
-        steps.push({
-            title: 'Database Schema',
-            display: dbLines.slice(0, 8).join('\n'),
-            narration: `The database design is critical for ${appName}. ${dbDesc}. Proper indexing and normalization ensure fast reads and consistent writes.`
-        });
-    }
+    const scale = (sectionMap.scaling || []).filter(l => l.length > 3);
+    if (scale.length) steps.push({ title: 'Scaling Strategy', display: scale.slice(0, 6).join('\n'), narration: `Scaling strategy: ${scale.map(toSpeakable).join('. ')}. With these techniques the system scales horizontally.` });
 
-    // Step 6 – Scaling
-    const scaleLines = (sectionMap.scaling || []).filter(l => l.length > 3);
-    if (scaleLines.length > 0) {
-        const scaleDesc = scaleLines.map(l => toSpeakable(l)).filter(Boolean).join('. ');
-        steps.push({
-            title: 'Scaling Strategy',
-            display: scaleLines.slice(0, 6).join('\n'),
-            narration: `Finally, here is how ${appName} scales to handle millions of users. ${scaleDesc}. With these techniques, the system can grow horizontally without downtime.`
-        });
-    }
+    steps.push({ title: 'Design Complete!', display: '✅ Done', narration: `That completes the system design for ${appName}. Explore Load Balancing, Caching, and Microservices in the sidebar for deeper dives.` });
 
-    // Step 7 – Closing
-    steps.push({
-        title: 'Design Complete!',
-        display: '✅ System Design Complete',
-        narration: `That concludes the system design for ${appName}. You now have a clear picture of the architecture, APIs, algorithms, database design, and scaling strategy. You can explore each topic in more depth using the sidebar topics on Load Balancing, Caching, Microservices, and Databases.`
-    });
-
-    if (steps.length === 0) return;
-
-    // ── Close AI panel so user can see canvas ──
-    const aiPanel = document.getElementById('ai-panel');
-    if (aiPanel) aiPanel.classList.remove('open');
+    const aiPanelEl = document.getElementById('ai-panel');
+    if (aiPanelEl) aiPanelEl.classList.remove('open');
 
     const subtitleEl = document.getElementById('canvas-subtitles');
     const descEl = document.getElementById('step-description');
 
-    // ── If design-visualizer is open, render steps over it ──
-    // ── Otherwise use main canvas ──
-    function drawDesignStep(idx) {
-        if (idx >= steps.length) {
-            speakRishiVoice('Presentation complete.');
-            return;
-        }
+    function drawStep(idx) {
+        if (idx >= steps.length) { speakRishiVoice('Presentation complete.'); return; }
         const step = steps[idx];
-
-        // Draw on main canvas if visible
         const cvs = document.getElementById('main-canvas');
         if (cvs && cvs.offsetParent !== null) {
             const ctx = cvs.getContext('2d');
             const w = cvs.width, h = cvs.height;
-
-            ctx.fillStyle = '#0f0b1e';
-            ctx.fillRect(0, 0, w, h);
-
+            ctx.fillStyle = '#0f0b1e'; ctx.fillRect(0, 0, w, h);
             const grd = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, 350);
-            grd.addColorStop(0, 'rgba(107,29,110,0.22)');
-            grd.addColorStop(1, 'transparent');
-            ctx.fillStyle = grd;
-            ctx.fillRect(0, 0, w, h);
-
-            // Step badge
+            grd.addColorStop(0, 'rgba(107,29,110,0.22)'); grd.addColorStop(1, 'transparent');
+            ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
             ctx.fillStyle = 'rgba(107,29,110,0.4)';
             ctx.beginPath(); ctx.roundRect(w/2 - 55, 24, 110, 32, 16); ctx.fill();
             ctx.fillStyle = '#c084fc'; ctx.font = '600 13px Outfit, sans-serif';
