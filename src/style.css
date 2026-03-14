@@ -4294,6 +4294,39 @@ body.presentation-active .controls-bar {
 }
 .mark-complete-btn:hover { background: var(--grad-primary); color: white; }
 
+/* Present Mode button in header — always visible, glowing */
+.presentation-btn-header {
+  background: linear-gradient(135deg, rgba(107,29,110,0.25), rgba(244,122,32,0.2));
+  border: 1px solid rgba(107,29,110,0.5);
+  color: #f0abfc;
+  padding: 6px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font);
+  transition: all 0.25s;
+  white-space: nowrap;
+  animation: present-hdr-pulse 3s ease-in-out infinite;
+}
+.presentation-btn-header:hover {
+  background: linear-gradient(135deg, #6b1d6e, #f47a20);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 0 20px rgba(107,29,110,0.6);
+  transform: translateY(-1px);
+}
+.presentation-btn-header.active {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  border-color: transparent;
+  color: white;
+  animation: none;
+}
+@keyframes present-hdr-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(107,29,110,0); }
+  50% { box-shadow: 0 0 14px rgba(107,29,110,0.45); }
+}
+
 /* ── Canvas Area (top ~55%) ── */
 .canvas-area {
   position: relative;
