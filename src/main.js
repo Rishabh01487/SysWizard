@@ -836,15 +836,51 @@ function toggleComplete(topicId) {
     updateProgressUI();
 }
 
-// ─── AI Panel ───
-// Logic moved to FeatureIntegration.js to prevent conflicts
-// but we keep handleAiSend and addAiMessage here for core chat functionality.
+// Simple but effective Markdown → HTML converter for Rishi's responses
+const markdownToHtml = (md) => {
+    return md
+        // Code blocks (triple backtick)
+        .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre class="ai-code-block"><code>$1</code></pre>')
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
+        // Headers
+        .replace(/^#{3}\s(.+)$/gm, '<h4 class="ai-h4">$1</h4>')
+        .replace(/^#{2}\s(.+)$/gm, '<h3 class="ai-h3">$1</h3>')
+        .replace(/^#{1}\s(.+)$/gm, '<h2 class="ai-h2">$1</h2>')
+        // Bold
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Italic
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Horizontal rule
+        .replace(/^---+$/gm, '<hr class="ai-hr">')
+        // Markdown table (basic)
+        .replace(/\|(.+)\|/g, (match) => {
+            if (match.includes('---')) return '';
+            const cells = match.split('|').filter(c => c.trim());
+            const isHeader = false;
+            return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+        })
+        // Bullet points
+        .replace(/^[\-\*]\s(.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)\n(?!<li>)/gs, '<ul>$1</ul>')
+        // Numbered list
+        .replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>')
+        // Line breaks (two newlines = paragraph break)
+        .replace(/\n\n/g, '</p><p>')
+        // Single newline
+        .replace(/\n/g, '<br>');
+};
 
 const addAiMessage = (role, text) => {
     if (!aiMessages) return;
     const div = document.createElement('div');
     div.className = `ai-msg ai-msg-${role}`;
-    div.textContent = text;
+    if (role === 'assistant') {
+        // Render Markdown for Rishi's responses
+        div.innerHTML = `<div class="ai-md-content">${markdownToHtml(text)}</div>`;
+    } else {
+        div.textContent = text;
+    }
     aiMessages.appendChild(div);
     aiMessages.scrollTop = aiMessages.scrollHeight;
 }

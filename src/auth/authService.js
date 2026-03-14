@@ -72,9 +72,19 @@ class AuthService {
         } catch { return null; }
     }
 
-    /** Check if logged in */
+    /** Check if logged in (session expires after 24 hours) */
     isLoggedIn() {
-        return !!this.getCurrentUser();
+        try {
+            const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+            if (!session) return false;
+            // Expire session after 24 hours
+            const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+            if (Date.now() - session.loginAt > TWENTY_FOUR_HOURS) {
+                localStorage.removeItem(SESSION_KEY);
+                return false;
+            }
+            return !!this.getCurrentUser();
+        } catch { return false; }
     }
 
     /** Set session */
