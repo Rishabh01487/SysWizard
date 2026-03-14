@@ -1483,20 +1483,49 @@ const handleAiSend = async () => {
     const isAppIdea = ideaKeywords.some(k => q.includes(k)) && q.length > 15;
 
     if (isAppIdea) {
-        // Show visual system design
-        thinkingDiv.textContent = '🏗️ Generating visual architecture... Check the main view!';
+        // Generate the structured design text (for presentation)
+        const designText = generateSystemDesign(text);
+
+        // Update chat message with design summary + Present button
         thinkingDiv.classList.remove('ai-thinking');
-        // Hide ALL views, show design visualizer full-screen
-        const homeView = document.getElementById('home-view');
-        const topicView = document.getElementById('topic-view');
+        thinkingDiv.innerHTML = `
+          <div class="ai-md-content">
+            <strong>🏗️ System design generated!</strong> Check the visual architecture in the main panel.<br>
+            <em style="color:var(--text-3);font-size:0.82rem;">Scroll down in the main area to explore components, APIs, and scaling strategies.</em>
+          </div>
+          <button class="rishi-present-btn" id="rishi-present-design-btn" title="Animate through the design with voice narration">🎬 Present This Design</button>
+        `;
+
+        // Wire up the chat Present button
+        setTimeout(() => {
+            const btn = document.getElementById('rishi-present-design-btn');
+            if (btn) btn.addEventListener('click', () => presentRishiDesign(designText));
+        }, 100);
+
+        // Show visual system design
+        const homeViewEl = document.getElementById('home-view');
+        const topicViewEl = document.getElementById('topic-view');
         const vizEl = document.getElementById('design-visualizer');
-        if (homeView) homeView.style.display = 'none';
-        if (topicView) topicView.style.display = 'none';
+        if (homeViewEl) homeViewEl.style.display = 'none';
+        if (topicViewEl) topicViewEl.style.display = 'none';
         if (vizEl) {
             vizEl.style.display = 'block';
             // Recreate instance each time for fresh state
             if (window._sdvInstance) window._sdvInstance.destroy();
             window._sdvInstance = new SystemDesignVisualizer(vizEl);
+
+            // Inject a floating Present button into the design-visualizer panel
+            const existingPresent = vizEl.querySelector('.sdv-present-btn');
+            if (!existingPresent) {
+                const presentOverlay = document.createElement('button');
+                presentOverlay.className = 'sdv-present-btn rishi-present-btn';
+                presentOverlay.innerHTML = '🎬 Present This Design';
+                presentOverlay.title = 'Animate through the design with voice narration';
+                presentOverlay.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;';
+                presentOverlay.addEventListener('click', () => presentRishiDesign(designText));
+                vizEl.appendChild(presentOverlay);
+            }
+
             // Override back button to restore home view
             const origRender = window._sdvInstance._render.bind(window._sdvInstance);
             window._sdvInstance._render = function (design) {
@@ -1505,7 +1534,7 @@ const handleAiSend = async () => {
                 if (backBtn) backBtn.onclick = () => {
                     this.container.style.display = 'none';
                     this.stop();
-                    if (homeView) homeView.style.display = '';
+                    if (homeViewEl) homeViewEl.style.display = '';
                 };
             };
             window._sdvInstance.generate(text);
@@ -1515,14 +1544,20 @@ const handleAiSend = async () => {
         try {
             const result = await rishiAgent.askQuestion(text);
             thinkingDiv.textContent = result.answer;
+            thinkingDiv.classList.remove('ai-thinking');
+
+            // Add Markdown rendering
+            thinkingDiv.innerHTML = `<div class="ai-md-content">${markdownToHtml(result.answer)}</div>`;
+
             if (isVoiceEnabled) speakRishiVoice(result.answer);
         } catch (e) {
             thinkingDiv.textContent = "I'm sorry, I'm having trouble connecting right now. Please try again later.";
+            thinkingDiv.classList.remove('ai-thinking');
         }
     }
-    thinkingDiv.classList.remove('ai-thinking');
     if (aiMessages) aiMessages.scrollTop = aiMessages.scrollHeight;
 }
+
 
 if (aiSendBtn) aiSendBtn.addEventListener('click', handleAiSend);
 if (aiInput) aiInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleAiSend(); });
