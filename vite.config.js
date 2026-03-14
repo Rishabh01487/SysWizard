@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite';
 
+// GitHub Pages needs /SysWizard/ base; Vercel & local dev use /
+const base = process.env.GITHUB_PAGES === 'true' ? '/SysWizard/' : '/';
+
 export default defineConfig({
-    base: '/SysWizard/',   // GitHub Pages serves from this subdirectory
+    base,
     server: {
         port: 5173,
         open: true,
