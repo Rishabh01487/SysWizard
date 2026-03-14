@@ -248,11 +248,17 @@ function speakRishiVoice(text, onEnd) {
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.05;
     utterance.pitch = 1.0;
+    utterance.lang = 'en-US'; // Always English — never pick a non-English voice
 
-    // Try to find a good voice
+    // Strictly prefer English voices only
     const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Natural')) || voices[0];
-    if (preferredVoice) utterance.voice = preferredVoice;
+    const englishVoice =
+        voices.find(v => v.name === 'Google US English') ||
+        voices.find(v => v.lang === 'en-US') ||
+        voices.find(v => v.lang === 'en-GB') ||
+        voices.find(v => v.lang && v.lang.startsWith('en')) ||
+        voices[0];
+    if (englishVoice) utterance.voice = englishVoice;
 
     if (onEnd) utterance.onend = onEnd;
 
@@ -1070,11 +1076,125 @@ const addAiMessage = (role, text) => {
     if (role === 'assistant') {
         // Render Markdown for Rishi's responses
         div.innerHTML = `<div class="ai-md-content">${markdownToHtml(text)}</div>`;
+
+        // If this is a system design response, add a "Present This" button
+        if (text.includes('SYSTEM DESIGN') || text.includes('Architecture') || text.includes('📐') || text.includes('🏗️')) {
+            const presentBtn = document.createElement('button');
+            presentBtn.className = 'rishi-present-btn';
+            presentBtn.innerHTML = '🎬 Present This Design';
+            presentBtn.title = 'Launch animated presentation of this design';
+            presentBtn.addEventListener('click', () => presentRishiDesign(text));
+            div.appendChild(presentBtn);
+        }
     } else {
         div.textContent = text;
     }
     aiMessages.appendChild(div);
     aiMessages.scrollTop = aiMessages.scrollHeight;
+}
+
+// ─── Present Rishi Design as Animation ───
+function presentRishiDesign(designText) {
+    // Extract major sections from the design text as steps
+    const lines = designText.split('\n').filter(l => l.trim());
+    const steps = [];
+    let currentSection = '';
+    let currentLines = [];
+
+    for (const line of lines) {
+        // Detect section headers (lines with emoji + ALL CAPS or lines starting with #)
+        if (/^[📐📡🧮📊🔥🔌🗄️⚙️🖥️🌐🔒📨📍🏗️🛡️📈⚠️━]/.test(line) && line.length < 80) {
+            if (currentLines.length > 0) {
+                steps.push({ title: currentSection, content: currentLines.join(' ') });
+                currentLines = [];
+            }
+            currentSection = line.replace(/[━─]/g, '').trim();
+        } else if (line.trim()) {
+            currentLines.push(line.trim());
+        }
+    }
+    if (currentLines.length > 0) steps.push({ title: currentSection, content: currentLines.join(' ') });
+
+    if (steps.length === 0) return;
+
+    // Close the AI panel so user can see canvas
+    const aiPanel = document.getElementById('ai-panel');
+    if (aiPanel) aiPanel.classList.remove('open');
+
+    // Show topic view if not already visible
+    if (topicView && topicView.style.display === 'none' && currentTopic) {
+        topicView.style.display = 'flex';
+    }
+
+    // Clear canvas and draw presentation slides
+    let stepIdx = 0;
+    const subtitleEl = document.getElementById('canvas-subtitles');
+    const descEl = document.getElementById('step-description');
+
+    function drawDesignStep(idx) {
+        if (idx >= steps.length) {
+            speakRishiVoice('Presentation complete. Any questions about this system design?');
+            return;
+        }
+        const step = steps[idx];
+        const fullText = `${step.title ? step.title + '. ' : ''}${step.content}`;
+
+        // Draw on canvas
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            // Dark background
+            ctx.fillStyle = '#0f0b1e';
+            ctx.fillRect(0, 0, w, h);
+            // Gradient glow
+            const grd = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, 300);
+            grd.addColorStop(0, 'rgba(107,29,110,0.18)');
+            grd.addColorStop(1, 'transparent');
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, w, h);
+            // Step number badge
+            ctx.fillStyle = 'rgba(107,29,110,0.35)';
+            ctx.beginPath(); ctx.roundRect(w/2 - 40, 30, 80, 36, 18); ctx.fill();
+            ctx.fillStyle = '#c084fc'; ctx.font = '600 14px Outfit, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(`Step ${idx + 1} / ${steps.length}`, w/2, 48);
+            // Section title
+            if (step.title) {
+                ctx.fillStyle = '#f0abfc'; ctx.font = '700 22px Outfit, sans-serif';
+                ctx.fillText(step.title.substring(0, 60), w/2, h/2 - 40);
+            }
+            // Content text (word wrap)
+            ctx.fillStyle = '#cbd5e1'; ctx.font = '400 15px Outfit, sans-serif';
+            const words = step.content.split(' ');
+            let line = '', lineY = step.title ? h/2 : h/2 - 30;
+            const maxWidth = w - 120;
+            for (const word of words) {
+                const test = line + word + ' ';
+                if (ctx.measureText(test).width > maxWidth && line) {
+                    ctx.fillText(line.trim(), w/2, lineY); lineY += 26; line = word + ' ';
+                    if (lineY > h - 80) break;
+                } else { line = test; }
+            }
+            if (line.trim()) ctx.fillText(line.trim(), w/2, lineY);
+            // Navigation hint
+            ctx.fillStyle = 'rgba(148,163,184,0.5)'; ctx.font = '12px Outfit, sans-serif';
+            ctx.fillText('▶ Auto-advancing...', w/2, h - 30);
+        }
+
+        // Update subtitle and step desc
+        if (subtitleEl) { subtitleEl.textContent = step.title || ''; subtitleEl.classList.add('active'); }
+        if (descEl) descEl.innerHTML = `<strong>${step.title || ''}</strong> ${step.content.substring(0, 120)}...`;
+
+        // Speak the step
+        speakRishiVoice(fullText.substring(0, 300), () => {
+            setTimeout(() => {
+                if (subtitleEl) subtitleEl.classList.remove('active');
+                drawDesignStep(idx + 1);
+            }, 800);
+        });
+    }
+
+    drawDesignStep(0);
 }
 
 const buildTopicContext = (topic) => {

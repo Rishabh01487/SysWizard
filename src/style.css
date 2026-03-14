@@ -4690,4 +4690,176 @@ body.presentation-active .controls-bar {
   .canvas-area { flex: 0 0 40%; }
   .content-tab { padding: 8px 10px; font-size: 0.75rem; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   RISHI PRESENT BUTTON
+   ══════════════════════════════════════════════════════════ */
+.rishi-present-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #6b1d6e, #f47a20);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  box-shadow: 0 0 16px rgba(107,29,110,0.5);
+  transition: all 0.2s;
+  animation: present-pulse 2s infinite;
+}
+.rishi-present-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(107,29,110,0.8), 0 0 40px rgba(244,122,32,0.3);
+}
+@keyframes present-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(107,29,110,0.4); }
+  50% { box-shadow: 0 0 24px rgba(107,29,110,0.7), 0 0 40px rgba(244,122,32,0.25); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   VIZ PANEL (Algorithms & Visualizations overlay)
+   ══════════════════════════════════════════════════════════ */
+.topic-viz-panel {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-base);
+  z-index: 950;
+  display: none;
+  flex-direction: column;
+}
+.topic-viz-panel.open { display: flex; }
+
+.viz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.viz-title { font-size: 1.05rem; font-weight: 700; color: var(--text-1); }
+.btn-close {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.btn-close:hover { border-color: var(--purple); color: var(--purple); }
+
+/* Section titles */
+.viz-section { margin-bottom: 32px; }
+.viz-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--purple);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+/* Big O Table */
+.bigo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.bigo-table th {
+  background: var(--bg-card);
+  color: var(--text-2);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+.bigo-table td {
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+.bigo-table tr:hover td { background: rgba(107,29,110,0.05); }
+.bigo-green  { color: #4ade80 !important; font-weight: 700; font-family: var(--mono); }
+.bigo-yellow { color: #facc15 !important; font-weight: 700; font-family: var(--mono); }
+.bigo-orange { color: #fb923c !important; font-weight: 700; font-family: var(--mono); }
+.bigo-red    { color: #f87171 !important; font-weight: 700; font-family: var(--mono); }
+
+/* Algorithm Cards Grid */
+.viz-algo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.viz-algo-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  transition: all 0.2s;
+}
+.viz-algo-card:hover {
+  border-color: var(--purple);
+  transform: translateY(-2px);
+  box-shadow: var(--glow-purple);
+}
+.viz-algo-icon { font-size: 1.6rem; margin-bottom: 8px; }
+.viz-algo-name { font-size: 0.95rem; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
+.viz-algo-complexity { font-size: 0.75rem; color: var(--orange); font-family: var(--mono); margin-bottom: 8px; }
+.viz-algo-desc { font-size: 0.83rem; color: var(--text-2); line-height: 1.5; margin-bottom: 10px; }
+.viz-algo-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.viz-algo-tags span {
+  background: rgba(107,29,110,0.15);
+  color: var(--purple);
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* Architecture Pattern Cards */
+.viz-pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.viz-pattern-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  transition: border-color 0.2s;
+}
+.viz-pattern-card:hover { border-color: var(--pink); }
+.viz-pattern-card h4 {
+  color: var(--purple);
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+.viz-pattern-card ul { list-style: none; padding: 0; margin: 0 0 10px; }
+.viz-pattern-card li {
+  font-size: 0.83rem;
+  color: var(--text-2);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  line-height: 1.4;
+}
+.viz-pattern-card li strong { color: var(--text-1); }
+.viz-pattern-used {
+  font-size: 0.75rem;
+  color: var(--orange);
+  font-weight: 600;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
 
