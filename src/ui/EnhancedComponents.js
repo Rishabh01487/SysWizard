@@ -250,11 +250,33 @@ export function addChatMessage(question, isUser = true) {
   if (isUser) {
     messageDiv.textContent = question;
   } else {
-    messageDiv.textContent = question;
+    // Render Markdown for Rishi's responses
+    messageDiv.innerHTML = `<div class="ai-md-content">${simpleMarkdownToHtml(question)}</div>`;
   }
 
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function simpleMarkdownToHtml(md) {
+  return md
+    .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre class="ai-code-block"><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
+    .replace(/^#{3}\s(.+)$/gm, '<h4 class="ai-h4">$1</h4>')
+    .replace(/^#{2}\s(.+)$/gm, '<h3 class="ai-h3">$1</h3>')
+    .replace(/^#{1}\s(.+)$/gm, '<h2 class="ai-h2">$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^---+$/gm, '<hr class="ai-hr">')
+    .replace(/^\|(.+)\|$/gm, (match) => {
+      if (match.includes('---')) return '';
+      const cells = match.split('|').filter(c => c.trim());
+      return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+    })
+    .replace(/^[\-\*]\s(.+)$/gm, '<li>$1</li>')
+    .replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
 }
 
 function escapeHtml(text) {
@@ -262,6 +284,7 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
 
 export function showLoadingIndicator(message = 'Thinking...') {
   const messagesDiv = document.querySelector('#ai-messages') || document.querySelector('#rishi-messages');
