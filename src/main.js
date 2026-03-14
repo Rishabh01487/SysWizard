@@ -239,18 +239,50 @@ if (aiVoiceBtn) {
 
 function speakRishiVoice(text, onEnd) {
     if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel(); // Stop current speech
+    window.speechSynthesis.cancel();
 
-    // Strip emojis and formatting for cleaner speech
-    let cleanText = text.replace(/[\u{1F600}-\u{1F6FF}]/gu, '');
-    cleanText = cleanText.replace(/[*_`#]/g, '');
+    let clean = text
+        // Remove separator lines of any kind
+        .replace(/[━─=\-]{3,}/g, ' ')
+        // Remove all emoji / unicode symbols (broad range)
+        .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu, '')
+        // Remove HTTP method + path patterns like "POST /api/auth/login"
+        .replace(/\b(GET|POST|PUT|PATCH|DELETE|WS)\s+\/[\w\/:\-\.]+/gi, '')
+        // Remove bare URL paths like /api/users/:id
+        .replace(/\/[\w\/:\-\.\?=&]+/g, '')
+        // Remove code comments // ...
+        .replace(/\/\/[^\n]*/g, '')
+        // Remove block comments /* ... */
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        // Replace — dash with comma or nothing
+        .replace(/—/g, ', ')
+        // Replace -> arrow
+        .replace(/->/g, ' to ')
+        // Replace => fat arrow
+        .replace(/=>/g, ' which gives ')
+        // Remove asterisks, underscores, backticks, hash, angle brackets
+        .replace(/[*_`#<>\[\]{}\(\)]/g, ' ')
+        // Remove lines that are entirely non-alphabetic (box-drawing, separators)
+        .replace(/^[^a-zA-Z\d]*$/gm, '')
+        // Remove leading bullet chars
+        .replace(/^[•\-\*\+]\s*/gm, '')
+        // Collapse multiple spaces
+        .replace(/[ \t]{2,}/g, ' ')
+        // Collapse multiple newlines
+        .replace(/\n{2,}/g, '. ')
+        .replace(/\n/g, ', ')
+        // Remove leftover standalone slashes
+        .replace(/\s\/\s/g, ', ')
+        .replace(/\s\/\/\s/g, ', ')
+        .trim();
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
-    utterance.lang = 'en-US'; // Always English — never pick a non-English voice
+    if (!clean) { if (onEnd) onEnd(); return; }
 
-    // Strictly prefer English voices only
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.05;
+    utterance.lang = 'en-US';
+
     const voices = window.speechSynthesis.getVoices();
     const englishVoice =
         voices.find(v => v.name === 'Google US English') ||
@@ -261,7 +293,6 @@ function speakRishiVoice(text, onEnd) {
     if (englishVoice) utterance.voice = englishVoice;
 
     if (onEnd) utterance.onend = onEnd;
-
     window.speechSynthesis.speak(utterance);
 }
 
@@ -1095,102 +1126,196 @@ const addAiMessage = (role, text) => {
 
 // ─── Present Rishi Design as Animation ───
 function presentRishiDesign(designText) {
-    // Extract major sections from the design text as steps
-    const lines = designText.split('\n').filter(l => l.trim());
-    const steps = [];
-    let currentSection = '';
-    let currentLines = [];
+    // ── Build natural-language steps from the design text ──
+    // Instead of reading raw text (which has slashes, code, symbols),
+    // we parse sections and build proper English narration scripts.
+
+    const lines = designText.split('\n').map(l => l.trim()).filter(Boolean);
+
+    // Helper: strip all technical syntax to plain English
+    function toSpeakable(raw) {
+        return raw
+            .replace(/[━─=\-]{3,}/g, '')
+            .replace(/\b(GET|POST|PUT|PATCH|DELETE|WS)\s+\/[\w\/:\-\.]+/gi, (m) => {
+                const method = m.split(' ')[0];
+                return method === 'GET' ? 'read endpoint' : method === 'POST' ? 'create endpoint' : method === 'PUT' || method === 'PATCH' ? 'update endpoint' : 'delete endpoint';
+            })
+            .replace(/\/[\w\/:\-\.\?=&]+/g, '')
+            .replace(/\/\/.*/g, '')
+            .replace(/—/g, ', ')
+            .replace(/->/g, ' to ')
+            .replace(/[*_`#<>{}\[\]\(\)]/g, ' ')
+            .replace(/[ \t]{2,}/g, ' ')
+            .replace(/\n/g, ' ')
+            .trim();
+    }
+
+    // ── Identify sections ──
+    const sectionMap = {};
+    let currentKey = 'intro';
+    sectionMap[currentKey] = [];
 
     for (const line of lines) {
-        // Detect section headers (lines with emoji + ALL CAPS or lines starting with #)
-        if (/^[📐📡🧮📊🔥🔌🗄️⚙️🖥️🌐🔒📨📍🏗️🛡️📈⚠️━]/.test(line) && line.length < 80) {
-            if (currentLines.length > 0) {
-                steps.push({ title: currentSection, content: currentLines.join(' ') });
-                currentLines = [];
-            }
-            currentSection = line.replace(/[━─]/g, '').trim();
-        } else if (line.trim()) {
-            currentLines.push(line.trim());
+        if (line.includes('ARCHITECTURE OVERVIEW') || line.includes('ARCHITECTURE')) { currentKey = 'architecture'; sectionMap[currentKey] = []; }
+        else if (line.includes('API ENDPOINT')) { currentKey = 'apis'; sectionMap[currentKey] = []; }
+        else if (line.includes('ALGORITHM') || line.includes('DATA STRUCT')) { currentKey = 'algorithms'; sectionMap[currentKey] = []; }
+        else if (line.includes('DATABASE') || line.includes('SCHEMA')) { currentKey = 'database'; sectionMap[currentKey] = []; }
+        else if (line.includes('SCALING')) { currentKey = 'scaling'; sectionMap[currentKey] = []; }
+        else if (line.includes('COMPLEXITY') || line.includes('ESTIMATED')) { currentKey = 'complexity'; sectionMap[currentKey] = []; }
+        else {
+            if (!sectionMap[currentKey]) sectionMap[currentKey] = [];
+            sectionMap[currentKey].push(line);
         }
     }
-    if (currentLines.length > 0) steps.push({ title: currentSection, content: currentLines.join(' ') });
+
+    // Extract the app name from the first line
+    const titleLine = lines.find(l => l.includes('SYSTEM DESIGN:') || l.includes('SYSTEM DESIGN'));
+    const appName = titleLine
+        ? titleLine.replace(/[🏗️━─\-]/g, '').replace('SYSTEM DESIGN:', '').trim()
+        : 'this application';
+
+    // ── Build human-readable narration steps ──
+    const steps = [];
+
+    // Step 1 – Introduction
+    steps.push({
+        title: `System Design: ${appName}`,
+        display: `🏗️ ${appName}`,
+        narration: `Welcome to the system design presentation for ${appName}. We will walk through the complete architecture, including how the frontend, backend, and databases are connected, what APIs power the app, which algorithms make it fast and reliable, and how it scales to millions of users.`
+    });
+
+    // Step 2 – Architecture
+    const archLines = (sectionMap.architecture || []).filter(l => l.length > 3);
+    if (archLines.length > 0) {
+        const readable = archLines.map(l => toSpeakable(l)).filter(Boolean).join('. ');
+        steps.push({
+            title: 'Architecture Overview',
+            display: archLines.slice(0, 6).map(l => toSpeakable(l)).join('\n'),
+            narration: `Let us start with the architecture overview. ${readable}. Together these components form the core infrastructure that powers ${appName}.`
+        });
+    }
+
+    // Step 3 – APIs
+    const apiLines = (sectionMap.apis || []).filter(l => l.length > 3);
+    if (apiLines.length > 0) {
+        // Convert API lines to natural language
+        const apiDesc = apiLines.map(l => {
+            const parts = l.replace(/\b(GET|POST|PUT|PATCH|DELETE|WS)\s+\/[\w\/:\-\.]+/gi, '').replace(/—/g, ', ').trim();
+            return parts;
+        }).filter(Boolean).slice(0, 6).join('. ');
+        steps.push({
+            title: 'API Endpoints',
+            display: apiLines.slice(0, 6).join('\n'),
+            narration: `Now let us look at the key APIs that make up ${appName}. The main endpoints handle: ${apiDesc}. These endpoints are secured with JWT tokens and follow RESTful conventions for consistency.`
+        });
+    }
+
+    // Step 4 – Algorithms
+    const algoLines = (sectionMap.algorithms || []).filter(l => l.length > 3);
+    if (algoLines.length > 0) {
+        const algoDesc = algoLines.map(l => toSpeakable(l)).filter(Boolean).join('. ');
+        steps.push({
+            title: 'Algorithms & Data Structures',
+            display: algoLines.slice(0, 6).join('\n'),
+            narration: `A powerful system needs smart algorithms. For ${appName}, the key algorithms are: ${algoDesc}. These ensure the system performs efficiently even under high load.`
+        });
+    }
+
+    // Step 5 – Database
+    const dbLines = (sectionMap.database || []).filter(l => l.length > 3);
+    if (dbLines.length > 0) {
+        const dbDesc = dbLines.map(l => toSpeakable(l)).filter(Boolean).join('. ');
+        steps.push({
+            title: 'Database Schema',
+            display: dbLines.slice(0, 8).join('\n'),
+            narration: `The database design is critical for ${appName}. ${dbDesc}. Proper indexing and normalization ensure fast reads and consistent writes.`
+        });
+    }
+
+    // Step 6 – Scaling
+    const scaleLines = (sectionMap.scaling || []).filter(l => l.length > 3);
+    if (scaleLines.length > 0) {
+        const scaleDesc = scaleLines.map(l => toSpeakable(l)).filter(Boolean).join('. ');
+        steps.push({
+            title: 'Scaling Strategy',
+            display: scaleLines.slice(0, 6).join('\n'),
+            narration: `Finally, here is how ${appName} scales to handle millions of users. ${scaleDesc}. With these techniques, the system can grow horizontally without downtime.`
+        });
+    }
+
+    // Step 7 – Closing
+    steps.push({
+        title: 'Design Complete!',
+        display: '✅ System Design Complete',
+        narration: `That concludes the system design for ${appName}. You now have a clear picture of the architecture, APIs, algorithms, database design, and scaling strategy. You can explore each topic in more depth using the sidebar topics on Load Balancing, Caching, Microservices, and Databases.`
+    });
 
     if (steps.length === 0) return;
 
-    // Close the AI panel so user can see canvas
+    // ── Close AI panel so user can see canvas ──
     const aiPanel = document.getElementById('ai-panel');
     if (aiPanel) aiPanel.classList.remove('open');
 
-    // Show topic view if not already visible
-    if (topicView && topicView.style.display === 'none' && currentTopic) {
-        topicView.style.display = 'flex';
-    }
-
-    // Clear canvas and draw presentation slides
-    let stepIdx = 0;
     const subtitleEl = document.getElementById('canvas-subtitles');
     const descEl = document.getElementById('step-description');
 
+    // ── If design-visualizer is open, render steps over it ──
+    // ── Otherwise use main canvas ──
     function drawDesignStep(idx) {
         if (idx >= steps.length) {
-            speakRishiVoice('Presentation complete. Any questions about this system design?');
+            speakRishiVoice('Presentation complete.');
             return;
         }
         const step = steps[idx];
-        const fullText = `${step.title ? step.title + '. ' : ''}${step.content}`;
 
-        // Draw on canvas
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width, h = canvas.height;
-            // Dark background
+        // Draw on main canvas if visible
+        const cvs = document.getElementById('main-canvas');
+        if (cvs && cvs.offsetParent !== null) {
+            const ctx = cvs.getContext('2d');
+            const w = cvs.width, h = cvs.height;
+
             ctx.fillStyle = '#0f0b1e';
             ctx.fillRect(0, 0, w, h);
-            // Gradient glow
-            const grd = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, 300);
-            grd.addColorStop(0, 'rgba(107,29,110,0.18)');
+
+            const grd = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, 350);
+            grd.addColorStop(0, 'rgba(107,29,110,0.22)');
             grd.addColorStop(1, 'transparent');
             ctx.fillStyle = grd;
             ctx.fillRect(0, 0, w, h);
-            // Step number badge
-            ctx.fillStyle = 'rgba(107,29,110,0.35)';
-            ctx.beginPath(); ctx.roundRect(w/2 - 40, 30, 80, 36, 18); ctx.fill();
-            ctx.fillStyle = '#c084fc'; ctx.font = '600 14px Outfit, sans-serif';
+
+            // Step badge
+            ctx.fillStyle = 'rgba(107,29,110,0.4)';
+            ctx.beginPath(); ctx.roundRect(w/2 - 55, 24, 110, 32, 16); ctx.fill();
+            ctx.fillStyle = '#c084fc'; ctx.font = '600 13px Outfit, sans-serif';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(`Step ${idx + 1} / ${steps.length}`, w/2, 48);
-            // Section title
-            if (step.title) {
-                ctx.fillStyle = '#f0abfc'; ctx.font = '700 22px Outfit, sans-serif';
-                ctx.fillText(step.title.substring(0, 60), w/2, h/2 - 40);
+            ctx.fillText(`Step ${idx + 1} of ${steps.length}`, w/2, 40);
+
+            // Title
+            ctx.fillStyle = '#f0abfc'; ctx.font = '700 20px Outfit, sans-serif';
+            ctx.fillText(step.title.substring(0, 56), w/2, h/2 - 60);
+
+            // Display content (word-wrapped)
+            const displayLines = step.display.split('\n').slice(0, 8);
+            ctx.fillStyle = '#94a3b8'; ctx.font = '400 13px Outfit, sans-serif';
+            let ly = h/2 - 20;
+            for (const dl of displayLines) {
+                const line = toSpeakable(dl).substring(0, 72);
+                if (line) { ctx.fillText(line, w/2, ly); ly += 22; }
             }
-            // Content text (word wrap)
-            ctx.fillStyle = '#cbd5e1'; ctx.font = '400 15px Outfit, sans-serif';
-            const words = step.content.split(' ');
-            let line = '', lineY = step.title ? h/2 : h/2 - 30;
-            const maxWidth = w - 120;
-            for (const word of words) {
-                const test = line + word + ' ';
-                if (ctx.measureText(test).width > maxWidth && line) {
-                    ctx.fillText(line.trim(), w/2, lineY); lineY += 26; line = word + ' ';
-                    if (lineY > h - 80) break;
-                } else { line = test; }
-            }
-            if (line.trim()) ctx.fillText(line.trim(), w/2, lineY);
-            // Navigation hint
-            ctx.fillStyle = 'rgba(148,163,184,0.5)'; ctx.font = '12px Outfit, sans-serif';
-            ctx.fillText('▶ Auto-advancing...', w/2, h - 30);
+
+            ctx.fillStyle = 'rgba(148,163,184,0.4)'; ctx.font = '11px Outfit, sans-serif';
+            ctx.fillText('🔊 Narrating...', w/2, h - 26);
         }
 
-        // Update subtitle and step desc
-        if (subtitleEl) { subtitleEl.textContent = step.title || ''; subtitleEl.classList.add('active'); }
-        if (descEl) descEl.innerHTML = `<strong>${step.title || ''}</strong> ${step.content.substring(0, 120)}...`;
+        if (subtitleEl) { subtitleEl.textContent = step.title; subtitleEl.classList.add('active'); }
+        if (descEl) descEl.innerHTML = `<strong>${step.title}</strong>`;
 
-        // Speak the step
-        speakRishiVoice(fullText.substring(0, 300), () => {
+        // Speak the natural English narration
+        speakRishiVoice(step.narration, () => {
             setTimeout(() => {
                 if (subtitleEl) subtitleEl.classList.remove('active');
                 drawDesignStep(idx + 1);
-            }, 800);
+            }, 700);
         });
     }
 
