@@ -4896,6 +4896,12 @@ body.presentation-active .controls-bar {
   border-top: 1px solid var(--border);
 }
 
+/* ── SysWizard Visual nav button glow (dashboard bar) ── */
+@keyframes swNavGlow {
+  0%, 100% { box-shadow: 0 0 5px rgba(168,85,247,0.3); }
+  50%       { box-shadow: 0 0 14px rgba(168,85,247,0.6); }
+}
+
 /* ══════════════════════════════════════════════════════════
    🎨 SysWizard Visual Engine
    White + Brinjal theme — matches the SysWizard dashboard
