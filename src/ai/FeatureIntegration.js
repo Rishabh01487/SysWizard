@@ -68,7 +68,7 @@ export class FeatureIntegration {
           🎨 Visualizations
         </button>
         <button id="btn-syswizard-visual" class="feature-btn sw-nav-visual-btn" title="SysWizard Visual — Generate Architecture Diagrams" style="padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(168,85,247,0.5); background: linear-gradient(135deg,rgba(107,29,110,0.4),rgba(124,58,237,0.3)); color: #e9d5ff; cursor: pointer; font-weight: 600; animation: swNavGlow 3s ease-in-out infinite;">
-          🎨 Visual
+          🎨 Manah Patal
         </button>
       `;
       main.insertBefore(btnBar, main.firstChild);

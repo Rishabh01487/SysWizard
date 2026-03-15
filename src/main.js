@@ -16,6 +16,7 @@ import { SystemDesignVisualizer } from './systemDesignVisualizer.js';
 import { setupClientServerBespoke } from './topics/bespoke/clientServer.js';
 import { setupLoadBalancingBespoke } from './topics/bespoke/loadBalancing.js';
 import { setupCachingBespoke } from './topics/bespoke/caching.js';
+import { setupAcidTransactionsBespoke } from './topics/bespoke/acidTransactions.js';
 import { DEEP_ANALYSIS, getDeepAnalysis } from './content/deepAnalysis.js';
 import { COMPREHENSIVE_GUIDE } from './content/comprehensiveGuide.js';
 import { TOPIC_VISUALIZATIONS } from './content/topicVisualizations.js';
@@ -35,7 +36,8 @@ const $ = s => document.querySelector(s);
 const ANIM_MODULES = {
     'client-server': setupClientServerBespoke,
     'load-balancing': setupLoadBalancingBespoke,
-    'caching': setupCachingBespoke
+    'caching': setupCachingBespoke,
+    'acid-transactions': setupAcidTransactionsBespoke
 };
 
 async function loadAnimModule(name) {
