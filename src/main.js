@@ -25,6 +25,8 @@ import { KNOWLEDGE_BASE_NOTES } from './content/knowledgeBase.js';
 import { ImageGenerator } from './ai/imageGenerator.js';
 import { RishiAIAgent, rishiAgent } from './ai/RishiAgent.js';
 import { featureIntegration } from './ai/FeatureIntegration.js';
+import { showVisualDescriptionPanel } from './napkinVisual.js';
+
 
 // DOM selections are now consolidated. Using $ helper.
 const $ = s => document.querySelector(s);
@@ -925,7 +927,16 @@ function initAppListeners() {
         });
     }
     if (presentationBtn) presentationBtn.addEventListener('click', togglePresentationMode);
+
+    // 🎨 Napkin AI — Visual Description button
+    const napkinVisualBtn = $('#napkin-visual-btn');
+    if (napkinVisualBtn) {
+        napkinVisualBtn.addEventListener('click', () => {
+            showVisualDescriptionPanel(currentTopic, null);
+        });
+    }
 }
+
 
 // Keyboard
 document.addEventListener('keydown', e => {
