@@ -27,6 +27,7 @@ import { ImageGenerator } from './ai/imageGenerator.js';
 import { RishiAIAgent, rishiAgent } from './ai/RishiAgent.js';
 import { featureIntegration } from './ai/FeatureIntegration.js';
 import { showVisualDescriptionPanel } from './napkinVisual.js';
+import { GameArena } from './game/GameArena.js';
 
 
 // DOM selections are now consolidated. Using $ helper.
@@ -57,6 +58,7 @@ const libraryView = $('#library-view');
 const libraryContent = $('#library-content');
 const nanoBananaView = $('#nano-banana-view');
 const nanoPrompt = $('#nano-prompt');
+const gameArenaView = $('#game-arena-view');
 const nanoGenerateBtn = $('#nano-generate-btn');
 const designVisualizer = $('#design-visualizer');
 const canvas = $('#main-canvas');
@@ -1770,12 +1772,20 @@ function switchView(viewId) {
         'home': homeView,
         'topic': topicView,
         'library': libraryView,
-        'nano-banana': nanoBananaView
+        'nano-banana': nanoBananaView,
+        'game-arena': gameArenaView,
     };
 
     Object.keys(views).forEach(key => {
         if (views[key]) views[key].style.display = (key === viewId) ? (viewId === 'topic' ? 'flex' : 'block') : 'none';
     });
+
+    if (viewId === 'game-arena') {
+        if (!gameArenaView._arenaInstance) {
+            gameArenaView._arenaInstance = new GameArena(gameArenaView);
+        }
+        gameArenaView._arenaInstance.render();
+    }
 }
 
 // ─── Auth Logic (Consolidated from authGate) ───
@@ -1830,6 +1840,7 @@ if (signupForm) {
 document.getElementById('nav-home-btn')?.addEventListener('click', () => switchView('home'));
 document.getElementById('sidebar-library-btn')?.addEventListener('click', () => switchView('library'));
 document.getElementById('sidebar-nano-banana-btn')?.addEventListener('click', () => switchView('nano-banana'));
+document.getElementById('sidebar-game-arena-btn')?.addEventListener('click', () => switchView('game-arena'));
 
 // Logout
 if (logoutBtn) logoutBtn.addEventListener('click', () => {
@@ -1841,6 +1852,16 @@ if (logoutBtn) logoutBtn.addEventListener('click', () => {
 // Check session on load
 if (authService.isLoggedIn()) {
     showApp();
+    const handleHash = () => {
+        if (window.location.hash) {
+            const view = window.location.hash.substring(1);
+            if (view === 'game-arena' || view === 'nano-banana' || view === 'library' || view === 'home') {
+                setTimeout(() => switchView(view), 50);
+            }
+        }
+    };
+    window.addEventListener('hashchange', handleHash);
+    handleHash();
 } else {
     showAuth();
 }

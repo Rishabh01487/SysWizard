@@ -115,9 +115,15 @@
             <span class="nav-item-icon">📚</span>
             <span>Notes Library</span>
           </div>
-          <div class="nav-item" id="sidebar-nano-banana-btn">
-            <span class="nav-item-icon">🍌</span>
-            <span>Nano Banana AI</span>
+          <div style="display: flex; gap: 8px;">
+            <div class="nav-item" id="sidebar-nano-banana-btn" style="flex: 1; padding: 12px 8px; justify-content: center;">
+              <span class="nav-item-icon">🍌</span>
+              <span style="font-size: 0.85rem;">Nano Banana</span>
+            </div>
+            <div class="nav-item" id="sidebar-game-arena-btn" style="flex: 1; padding: 12px 8px; justify-content: center; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3);">
+              <span class="nav-item-icon">🎮</span>
+              <span style="font-size: 0.85rem; color: #d8b4fe; font-weight: bold;">Game Arena</span>
+            </div>
           </div>
         </div>
         <!-- Dynamic topic categories will be rendered here -->
@@ -278,6 +284,9 @@
       <div id="nano-loading" class="nano-loading" style="display:none">Generating visual blueprint...</div>
     </div>
   </section>
+
+  <!-- Game Arena View -->
+  <section id="game-arena-view" style="display:none;flex:1;overflow-y:auto"></section>
   </main>
 
   <!-- AI Panel -->

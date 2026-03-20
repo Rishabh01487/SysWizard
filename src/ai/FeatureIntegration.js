@@ -70,6 +70,9 @@ export class FeatureIntegration {
         <button id="btn-syswizard-visual" class="feature-btn sw-nav-visual-btn" title="SysWizard Visual — Generate Architecture Diagrams" style="padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(168,85,247,0.5); background: linear-gradient(135deg,rgba(107,29,110,0.4),rgba(124,58,237,0.3)); color: #e9d5ff; cursor: pointer; font-weight: 600; animation: swNavGlow 3s ease-in-out infinite;">
           🎨 Manah Patal
         </button>
+        <button id="btn-top-game-arena" class="feature-btn" title="Play System Design Games" style="padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(168,85,247,0.8); background: rgba(168,85,247,0.15); color: #d8b4fe; cursor: pointer; font-weight: bold; box-shadow: 0 0 10px rgba(168,85,247,0.2);">
+          🎮 Game Arena
+        </button>
       `;
       main.insertBefore(btnBar, main.firstChild);
     }
@@ -145,6 +148,15 @@ export class FeatureIntegration {
       if (btnSWVisual) {
         btnSWVisual.addEventListener('click', () => {
           import('/src/napkinVisual.js').then(m => m.showVisualDescriptionPanel(null, ''));
+        });
+      }
+
+      // Top bar Game Arena Button
+      const btnTopGameArena = document.querySelector('#btn-top-game-arena');
+      if (btnTopGameArena) {
+        btnTopGameArena.addEventListener('click', () => {
+          this.hideAllPanels();
+          window.location.hash = '#game-arena';
         });
       }
 
