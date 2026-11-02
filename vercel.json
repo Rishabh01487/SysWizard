@@ -3,12 +3,11 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "devCommand": "next dev",
-  "installCommand": "bun install",
+  "installCommand": "npm install",
   "nodeVersion": "20.x",
   "git": {
     "deploymentEnabled": true
   },
-  "regions": ["bom1"],
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   }
