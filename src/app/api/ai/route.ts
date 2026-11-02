@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
+import { createChatCompletion } from "@/lib/ai-client";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -7,10 +7,9 @@ export const maxDuration = 60;
 /**
  * Rishi — the SysWizard AI tutor.
  *
- * Powered by GLM-4.6 (the largest, most capable model in the z-ai family —
- * automatically routed to the gateway's most powerful backend). For complex
- * reasoning questions we enable chain-of-thought ("thinking") so Rishi
- * reasons step-by-step before answering.
+ * For complex reasoning questions we enable chain-of-thought ("thinking")
+ * so Rishi reasons step-by-step before answering. For quick factual
+ * queries, thinking is disabled for low latency.
  */
 
 const SYSTEM_PROMPT = `You are **Rishi**, the SysWizard AI tutor — a world-class senior engineer who has designed systems at Google, Netflix, Uber, and Amazon and now mentors learners full-time.
@@ -56,10 +55,11 @@ export async function POST(req: NextRequest) {
     const { messages, topic, fast } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: "Messages are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Messages are required" },
+        { status: 400 },
+      );
     }
-
-    const zai = await ZAI.create();
 
     /* Topic-aware context appended to the system prompt */
     const systemContent = topic
@@ -73,12 +73,10 @@ export async function POST(req: NextRequest) {
     ];
 
     /**
-     * Strategy:
+     * Adaptive reasoning:
      *  - For short factual / quick questions, skip thinking for low latency.
-     *  - For architecture / design / "explain" / "compare" / multi-step reasoning,
-     *    enable chain-of-thought so Rishi reasons before answering.
-     *  - Always use the largest available model (the gateway aliases all
-     *    `glm-4.x` names to the strongest backend it has).
+     *  - For architecture / design / "explain" / "compare" / multi-step
+     *    reasoning, enable chain-of-thought so Rishi reasons before answering.
      */
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
     const lastText = (lastUser?.content || "").toLowerCase();
@@ -94,8 +92,7 @@ export async function POST(req: NextRequest) {
 
     const wantThinking = !isQuick && (isArchitectural || lastText.length > 120);
 
-    const completion = await zai.chat.completions.create({
-      model: "glm-4.6",
+    const completion = await createChatCompletion({
       messages: allMessages,
       thinking: { type: wantThinking ? "enabled" : "disabled" },
       temperature: 0.7,
@@ -112,7 +109,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       response,
-      model: completion.model || "glm-4.6",
+      model: completion.model || "tutor",
       thinking: wantThinking,
     });
   } catch (error) {

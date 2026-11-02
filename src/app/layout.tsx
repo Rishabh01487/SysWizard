@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     "Data Structures", "Distributed Systems", "Next.js",
   ],
   authors: [{ name: "SysWizard" }],
-  icons: { icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg" },
+  icons: { icon: "/logo.svg" },
   openGraph: {
     title: "SysWizard — Master System Design Visually",
     description: "Animated · Interactive · AI-Powered system design learning.",
