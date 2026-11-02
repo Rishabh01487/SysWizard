@@ -53,3 +53,13 @@ prompt
 server.log
 # Skills directory
 /skills/
+# Sandbox-only files (not needed for deployment)
+Caddyfile
+.zscripts/
+mini-services/
+examples/
+download/
+agent-ctx/
+db/*.db
+db/*.db-journal
+bun.lock
