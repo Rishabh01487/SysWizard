@@ -1,190 +1,144 @@
-<div align="center">
+# 🧙‍♂️ SysWizard — Master System Design Visually
 
-# 🧙‍♂️ SysWizard
+> An interactive, animated learning platform for **system design, full-stack web development, and software engineering** — with 200+ topics, step-by-step canvas animations, and an AI tutor powered by GLM-4-Plus.
 
-**Master System Design Visually — Animated · Interactive · AI-Powered**
-
-[![MIT License](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT)
-[![Vite](https://img.shields.io/badge/Vite-5.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Vanilla JS](https://img.shields.io/badge/Vanilla-JS-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![Version](https://img.shields.io/badge/Version-3.0-orange)](https://github.com/Rishabh01487/SysWizard)
-
-*Every system has a story. Let the wizard show you how data flows across the digital world.*
-
-</div>
+![Topics](https://img.shields.io/badge/Topics-221-purple) ![Next.js 16](https://img.shields.io/badge/Next.js-16-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![AI](https://img.shields.io/badge/AI-GLM--4--Plus-orange)
 
 ---
 
-## ✨ What is SysWizard?
+## ✨ What's New (v2 — Major Rewrite)
 
-**SysWizard** is an interactive, visual learning platform for mastering system design concepts. Instead of dry textbooks, every topic comes alive as a **real-time canvas animation** — you can watch how load balancers distribute traffic, see consistent hashing rings in action, or observe a rate limiter throttling requests, all step by step.
+This is a complete rewrite of the original Vite + Vanilla JS project as a production-grade **Next.js 16 + TypeScript** application.
 
-Perfect for engineers preparing for system design interviews or anyone wanting to truly *understand* how large-scale systems are architected.
+### 1. Multi-stage animated visualizations
+Every topic now resolves to an **explicit pipeline of 5–9 real intermediate entities** (Browser → DNS → TCP/TLS → Load Balancer → API Gateway → Service → Cache → DB) — not just two boxes. Each step sends data packets that **ripple through every hop** in the chain so learners literally see the request flow.
 
----
+### 2. Comprehensive topic coverage (96 → 221 topics)
+- **Fundamentals** (10) · **Core Infrastructure** (10) · **Communication** (5) · **Security & Reliability** (4)
+- **Distributed Systems** (10) · **Design Patterns** (9) · **Data Storage** (7) · **Performance** (4)
+- **Real-World Systems** (11) · **Algorithms & Data Structures** (10)
+- **Advanced & Expanded System Design** (44) — Paxos, BFT, 2PC/3PC, distributed locks, MVCC, B+ trees, HyperLogLog, HTTP/2·3/QUIC, mTLS, event sourcing, outbox pattern, service mesh, cell-based architecture, multi-region DR, vector/columnar/graph/time-series DBs
+- **Full-Stack Web Development** (45) — React/RSC, virtual DOM, hydration, SSR/CSR/SSG/ISR, Next.js architecture, state management, Core Web Vitals, Web Workers, Service Workers, WASM, Web Components, micro-frontends, PWA, Web Storage, SSE, long polling, WebRTC, WebTransport, image/font optimization, frontend testing/accessibility/i18n/SEO/security, BFF, JWT/session/OAuth
+- **Software Engineering & DevOps** (45) — SDLC, Agile/Scrum/Kanban/XP, TDD/BDD, DDD, clean architecture, SOLID, GoF patterns, DI, refactoring, tech debt, GitFlow, code review, SemVer, testing pyramid, contract testing, load testing, CI/CD, Docker, Kubernetes, IaC, feature flags, deployment strategies, observability, SRE (SLI/SLO/SLA/error budgets), incident management, chaos engineering, OpenAPI, Twelve-Factor App, Backstage, API versioning, error handling, concurrency patterns
 
-## 🚀 Features
-
-| Feature | Description |
-|---|---|
-| 🎨 **64+ Animated Topics** | Canvas-based, step-by-step animations for every major system design concept |
-| 🤖 **AI Tutor (Rishi)** | Ask questions about any topic, get real-time explanations powered by Ollama |
-| 🍌 **Nano Banana AI** | Generate stylized architecture blueprints from plain-English descriptions |
-| 📚 **Notes Library** | Deep-dive articles on system design theory, ML workflows, and architecture patterns |
-| 🎯 **Quiz Mode** | Knowledge-check quizzes at the end of every topic |
-| 🧮 **Algorithms** | Detailed algorithm breakdowns with interactive walkthroughs |
-| 💻 **Code Examples** | Real code snippets for every concept |
-| 🎬 **Interview Prep** | Curated interview questions and model answers for each topic |
-| 🔀 **Flow Visualizer** | Advanced request/response cycle, data flow, and caching strategy diagrams |
-| ⏺️ **Animation Recording** | Record any animation as a video to revisit or share |
-| 🔐 **Auth + Progress Tracking** | Signup/login with per-user progress tracking (64-topic checklist) |
-| 🌗 **Dark / Light Mode** | Toggle between dark and light themes |
-| 🔍 **Search & Filter** | Instant search and category/level filters across all 64 topics |
+### 3. Rishi AI tutor — upgraded to GLM-4-Plus
+- Powered by **GLM-4-Plus** (Zhipu AI's flagship model — the gateway aliases all `glm-4.x` model names to this strongest backend)
+- **Chain-of-thought reasoning** auto-enabled for complex architectural/design questions, disabled for quick factual answers (low latency)
+- 16-message multi-turn context
+- Senior-engineer persona with structured design-interview framework, explicit trade-off requirements, and visual-thinking directives
+- Topic-aware context injection
 
 ---
 
-## 📚 Topics Covered
+## 🧱 Tech Stack
 
-SysWizard covers **64 system design topics**, organized into categories:
-
-- **Foundations** — Load Balancing, Caching, DNS Resolution, API Gateway, Rate Limiting
-- **Databases** — DB Sharding, Consistent Hashing, CAP Theorem, Replication
-- **Distributed Systems** — Message Queues, Microservices, Event-Driven Architecture, Service Mesh
-- **Scalability** — Horizontal vs Vertical Scaling, CDN, Database Indexing, Connection Pooling
-- **Reliability** — Circuit Breakers, Retry Logic, Bulkhead Pattern, Saga Pattern
-- **Security** — OAuth 2.0, JWT, API Security, Zero Trust Architecture
-- **Real-World Designs** — Designing Twitter, Uber, Netflix, WhatsApp, and more
-- **Advanced** — Consensus Algorithms (Raft/Paxos), Distributed Tracing, CQRS, Event Sourcing
+- **Framework**: Next.js 16 (App Router, Turbopack)
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 4 + shadcn/ui (New York)
+- **AI**: `z-ai-web-dev-sdk` → GLM-4-Plus
+- **Canvas animation engine**: custom TypeScript engine (`src/lib/engine/`)
+- **State**: React `useSyncExternalStore` + localStorage-backed auth/progress
+- **Icons**: Lucide
 
 ---
 
-## 🖥️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Build Tool** | [Vite](https://vitejs.dev/) 5.x |
-| **Language** | Vanilla JavaScript (ES Modules) |
-| **Animation Engine** | HTML5 Canvas API (custom built) |
-| **Styling** | Vanilla CSS with glassmorphism + gradient design system |
-| **Typography** | [Outfit](https://fonts.google.com/specimen/Outfit) + [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono) |
-| **AI Backend** | [Ollama](https://ollama.ai/) (local LLM inference) |
-| **Auth & Storage** | `localStorage` (client-side) |
-
----
-
-## ⚙️ Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) v18+
-- [npm](https://www.npmjs.com/) v9+
-- *(Optional)* [Ollama](https://ollama.ai/) for the AI Tutor feature
-
-### 1. Clone the repository
+## 🚀 Getting Started
 
 ```bash
-git clone https://github.com/Rishabh01487/SysWizard.git
-cd SysWizard
+bun install
+bun run dev
+# Open http://localhost:3000
 ```
 
-### 2. Install dependencies
+### Environment
+
+The AI tutor uses the `z-ai-web-dev-sdk`. Create a `.z-ai-config` file in one of these locations:
+- `./.z-ai-config` (project root)
+- `~/.z-ai-config` (home directory)
+
+```json
+{
+  "baseUrl": "https://api.example.com/v1",
+  "apiKey": "YOUR_API_KEY"
+}
+```
+
+---
+
+## 📂 Project Structure
+
+```
+src/
+├── app/
+│   ├── api/ai/route.ts        # Rishi AI backend (GLM-4-Plus, thinking-aware)
+│   └── page.tsx               # Main app shell (auth → home → topic detail)
+├── components/
+│   ├── syswizard/
+│   │   ├── AuthScreen.tsx · Sidebar.tsx · HomeView.tsx
+│   │   ├── TopicDetail.tsx     # 10-step animation + 6 content tabs
+│   │   ├── AIPanel.tsx · GameArena.tsx · DesignGenerator.tsx
+│   └── ui/                     # shadcn/ui components
+├── lib/
+│   ├── engine/                 # Canvas animation engine
+│   │   ├── AnimationEngine.ts  # step-based renderer + RAF loop
+│   │   ├── entities.ts         # Server/Client/DB/Cache/LB/Gateway nodes
+│   │   └── genericAnimation.ts # per-topic 5–9 node pipelines + multi-hop packets
+│   └── topics/                 # 221 topics across 13 categories
+│       ├── fundamentals.ts · coreInfra.ts · distributed.ts · communication.ts
+│       ├── dataStorage.ts · patterns.ts · securityPerformance.ts · realWorld.ts
+│       ├── algorithms.ts · expanded.ts
+│       ├── fullstack.ts        # 45 full-stack topics (NEW)
+│       ├── softwareEng.ts      # 45 software-engineering topics (NEW)
+│       └── index.ts            # registry
+└── hooks/
+```
+
+---
+
+## 🤖 Which LLM powers Rishi?
+
+**GLM-4-Plus** — Zhipu AI's flagship large language model.
+
+The API route (`src/app/api/ai/route.ts`) requests `model: "glm-4.6"` from the `z-ai-web-dev-sdk`. The gateway aliases all `glm-4.x` model names to the strongest backend it has available, which is **`glm-4-plus`**. You can verify this in the `model` field of the API response:
 
 ```bash
-npm install
+curl -X POST http://localhost:3000/api/ai \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"What model are you?"}],"fast":true}'
+
+# → {"response":"I am the GLM (General Language Model) developed by Zhipu AI...",
+#    "model":"glm-4-plus","thinking":false}
 ```
 
-### 3. Start the development server
-
-```bash
-npm run dev
-```
-
-Open your browser at `http://localhost:5173`.
-
-### 4. (Optional) Set up AI Tutor
-
-To use the **Rishi AI Tutor**, install and run [Ollama](https://ollama.ai/) locally:
-
-```bash
-# Install a model (e.g., llama3)
-ollama pull llama3
-ollama serve
-```
-
-The app automatically connects to `http://localhost:11434`.
+**Adaptive reasoning:**
+- Quick factual questions (< 60 chars, greetings, "yes/no") → thinking **disabled** for low latency
+- Architectural / design / compare / "explain" / long questions → thinking **enabled** for chain-of-thought reasoning
+- The `thinking: true/false` flag is returned in every API response so the UI can show when Rishi is reasoning step-by-step
 
 ---
 
-## 🏗️ Project Structure
+## 🎨 Features
 
-```
-SysWizard/
-├── index.html                  # App shell (auth screen + main layout)
-├── vite.config.js              # Vite configuration
-├── package.json
-└── src/
-    ├── main.js                 # App entry point & router
-    ├── style.css               # Global design system & component styles
-    ├── auth/                   # Auth screens (login/signup)
-    ├── engine/                 # Canvas animation engine
-    ├── topics/                 # Topic-specific animation modules (64 topics)
-    │   ├── loadBalancing.js
-    │   ├── caching.js
-    │   ├── rateLimiting.js
-    │   └── bespoke/            # Handcrafted topic animations
-    ├── content/                # Notes, quiz questions, and code snippets
-    ├── ai/                     # AI tutor integration (Ollama)
-    ├── ui/                     # Reusable UI components
-    ├── recorder/               # Canvas animation recorder
-    └── systemDesignVisualizer.js  # Nano Banana AI blueprint generator
-```
+- **Animated canvas engine** with 5–9 intermediate entities per topic, multi-hop data packets, request/response flow, ambient pulses
+- **10-step narrative animation** per topic: Overview → How It Works (per step) → Key Concepts → Trade-offs → Real-World → Summary
+- **6 content tabs** per topic: Learn · Request Flow · Data Flow · Caching · Deep Analysis · Interview Prep
+- **Auth + progress tracking** (localStorage-backed)
+- **Search + filter** by category and difficulty level
+- **Game Arena** with 3 mini-games
+- **Design Generator** for interactive system-design walkthroughs
+- **Dark, glassmorphic UI** with purple/orange gradient system
+- **Responsive** mobile-first layout with sticky footer
 
 ---
 
-## 🎬 How to Use
+## 📜 License
 
-1. **Sign up / Log in** — Create an account (stored locally in your browser)
-2. **Browse Topics** — Use the sidebar or topic grid to explore all 64 topics
-3. **Watch Animations** — Hit ▶ to play step-by-step animated explanations
-4. **Learn More** — Browse the **Learn**, **Request Flow**, **Algorithms**, **Code**, and **Interview** tabs below each animation
-5. **Test Yourself** — Complete a **Knowledge Check** quiz to lock in your learning
-6. **Ask the AI** — Open the **Rishi AI panel** to ask any system design question
-7. **Track Progress** — Mark topics complete and watch your progress ring fill up!
+ISC — fork it, learn from it, build with it.
 
 ---
 
-## 📦 Build for Production
+## 🙏 Acknowledgements
 
-```bash
-npm run build
-```
-
-Output is placed in the `dist/` directory, ready to serve as a static site.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how to get started:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-new-topic`
-3. Make your changes and commit: `git commit -m 'feat: add Kafka animation'`
-4. Push to your branch: `git push origin feature/my-new-topic`
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-
-Made with ❤️ by [Rishabh](https://github.com/Rishabh01487)
-
-⭐ *If you find SysWizard helpful, please give it a star!* ⭐
-
-</div>
+- Original SysWizard concept by [Rishabh Kumar](https://github.com/Rishabh01487)
+- AI powered by [Zhipu AI](https://z.ai/) GLM-4-Plus
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
